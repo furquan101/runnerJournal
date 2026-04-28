@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useUiMode } from "@/store/useUiMode";
 import { usePlan } from "@/store/usePlan";
 import { groupByWeek, weekMiles, findCurrentWeekIndex } from "@/lib/planWeeks";
+import { workoutDetail } from "@/lib/workoutDetails";
 import { todayISO } from "@/lib/date";
 
 export function PlanOverviewDialog() {
@@ -37,7 +38,7 @@ export function PlanOverviewDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      <DialogContent className="max-w-[720px]" onKeyDown={onKeyDown}>
+      <DialogContent className="max-w-[720px] max-h-[85vh] overflow-y-auto" onKeyDown={onKeyDown}>
         <DialogHeader>
           <DialogTitle className="text-3xl font-normal">
             {plan.target.race} plan overview
@@ -85,23 +86,42 @@ export function PlanOverviewDialog() {
                 <p className="px-4 py-3 text-sm opacity-60">No workouts scheduled this week.</p>
               ) : (
                 <ul className="flex flex-col">
-                  {currentWeek.workouts.map((w) => (
-                    <li
-                      key={w.id}
-                      className="flex items-center gap-3 border-b border-neutral-200 px-4 py-3 text-sm text-black/80 last:border-b-0"
-                    >
-                      <span
-                        aria-hidden
-                        className={
-                          "h-2 w-2 shrink-0 rounded-full border border-black " +
-                          (w.completed ? "bg-black" : "bg-transparent")
-                        }
-                      />
-                      <span className="w-12 shrink-0 opacity-60">{w.weekday.slice(0, 3)}</span>
-                      <span className="flex-1">{w.description}</span>
-                      {w.pace && <span className="opacity-60">{w.pace}</span>}
-                    </li>
-                  ))}
+                  {currentWeek.workouts.map((w) => {
+                    const detail = workoutDetail(w.type);
+                    return (
+                      <li
+                        key={w.id}
+                        className="flex gap-3 border-b border-neutral-200 px-4 py-4 text-sm text-black/80 last:border-b-0"
+                      >
+                        <span
+                          aria-hidden
+                          className={
+                            "mt-1.5 h-2 w-2 shrink-0 rounded-full border border-black " +
+                            (w.completed ? "bg-black" : "bg-transparent")
+                          }
+                        />
+                        <span className="w-12 shrink-0 pt-0.5 opacity-60">
+                          {w.weekday.slice(0, 3)}
+                        </span>
+                        <div className="flex flex-1 flex-col gap-1.5">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-black">{w.description}</span>
+                            {w.pace && (
+                              <span className="shrink-0 text-xs opacity-60">{w.pace}</span>
+                            )}
+                          </div>
+                          <p className="text-xs leading-[1.55] text-black/60">
+                            <span className="font-medium text-black/75">Effort.</span>{" "}
+                            {detail.effort}
+                          </p>
+                          <p className="text-xs leading-[1.55] text-black/60">
+                            <span className="font-medium text-black/75">Why it matters.</span>{" "}
+                            {detail.purpose}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

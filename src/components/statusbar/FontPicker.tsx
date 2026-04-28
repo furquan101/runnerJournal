@@ -14,7 +14,7 @@ export function FontPicker() {
   const setFontFamily = useSettings((s) => s.setFontFamily);
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="text-sm text-black hover:underline focus:outline-none">
+      <DropdownMenuTrigger className="text-sm hover:underline focus:outline-none">
         Fonts
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[160px]">

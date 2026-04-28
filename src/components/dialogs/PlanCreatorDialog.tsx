@@ -72,7 +72,12 @@ export function PlanCreatorDialog() {
   }, [race]);
 
   const togglePreferred = (d: string) =>
-    setPreferredDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+    setPreferredDays((cur) => {
+      if (cur.includes(d)) return cur.filter((x) => x !== d);
+      const limit = Number(trainingFreqPerWeek);
+      if (Number.isFinite(limit) && limit >= 1 && cur.length >= limit) return cur;
+      return [...cur, d];
+    });
 
   const pickRace = (r: KnownRace) => {
     justPickedRef.current = true;
@@ -132,7 +137,12 @@ export function PlanCreatorDialog() {
     const freq = Number(trainingFreqPerWeek);
     if (!Number.isFinite(freq) || freq < 1 || freq > 7)
       return setError("Training frequency must be 1–7");
-    if (preferredDays.length === 0) return setError("Pick at least one preferred day");
+    if (preferredDays.length !== freq)
+      return setError(
+        `You said ${freq} day${freq === 1 ? "" : "s"} a week — pick ${freq} preferred ${
+          freq === 1 ? "day" : "days"
+        } (currently ${preferredDays.length}).`,
+      );
     const target: RaceTarget = {
       race: race.trim(),
       raceDate,

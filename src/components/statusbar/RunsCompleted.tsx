@@ -7,5 +7,5 @@ export function RunsCompleted() {
     () => (plan ? plan.schedule.filter((w) => w.completed).length : 0),
     [plan],
   );
-  return <span className="text-sm text-black">Runs completed: {count}</span>;
+  return <span className="text-sm">Runs completed: {count}</span>;
 }

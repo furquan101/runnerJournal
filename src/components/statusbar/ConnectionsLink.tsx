@@ -7,7 +7,7 @@ export function ConnectionsLink() {
     <button
       type="button"
       onClick={open}
-      className="text-sm text-black hover:underline focus:outline-none"
+      className="text-sm hover:underline focus:outline-none"
     >
       Connections
     </button>
@@ -16,15 +16,9 @@ export function ConnectionsLink() {
 
 export function ConnectionsStatus() {
   const stravaConnected = useSettings((s) => !!s.stravaAccessToken);
-  const ouraConnected = useSettings((s) => s.ouraConnected);
   return (
-    <>
-      <span className="text-sm text-black">
-        Strava {stravaConnected ? "connected" : "not connected"}
-      </span>
-      <span className="text-sm text-black">
-        Oura {ouraConnected ? "connected" : "not connected"}
-      </span>
-    </>
+    <span className="text-sm">
+      Strava {stravaConnected ? "connected" : "not connected"}
+    </span>
   );
 }

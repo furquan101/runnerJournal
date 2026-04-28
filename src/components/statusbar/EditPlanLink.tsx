@@ -6,7 +6,7 @@ export function EditPlanLink() {
     <button
       type="button"
       onClick={open}
-      className="text-sm text-black hover:underline focus:outline-none"
+      className="text-sm hover:underline focus:outline-none"
     >
       Edit plan
     </button>

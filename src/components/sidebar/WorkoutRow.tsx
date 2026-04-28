@@ -17,12 +17,12 @@ export function WorkoutRow({
       type="button"
       onClick={onSelect}
       className={
-        "chrome group flex w-full flex-col gap-3 rounded-md border-b border-[#d9d9d9] px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-neutral-100 focus:outline-none focus-visible:bg-neutral-100 " +
+        "chrome group flex w-full flex-col gap-2 rounded-md -mx-3 px-3 py-2.5 text-left transition-colors hover:bg-neutral-100 focus:outline-none focus-visible:bg-neutral-100 " +
         (selected ? "bg-neutral-100" : "")
       }
     >
-      <p className="text-xl text-black">{workout.weekday}</p>
-      <div className="flex flex-wrap items-center gap-1.5 text-sm text-black">
+      <p className="text-base text-black">{workout.weekday}</p>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs text-black">
         <span>{workout.description}</span>
         {workout.pace && (
           <>
@@ -46,7 +46,7 @@ export function WorkoutRow({
             }
           }}
           className={
-            "cursor-pointer text-sm transition " +
+            "cursor-pointer text-xs transition " +
             (workout.completed ? "text-emerald-700" : "text-black/60 hover:text-black")
           }
         >

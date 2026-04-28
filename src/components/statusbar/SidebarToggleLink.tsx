@@ -8,7 +8,7 @@ export function SidebarToggleLink() {
     <button
       type="button"
       onClick={toggle}
-      className="text-sm text-black hover:underline focus:outline-none"
+      className="text-sm hover:underline focus:outline-none"
     >
       {label}
     </button>

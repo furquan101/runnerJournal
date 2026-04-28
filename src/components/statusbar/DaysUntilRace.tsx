@@ -7,7 +7,7 @@ export function DaysUntilRace() {
   const n = daysUntil(plan.target.raceDate);
   const name = plan.target.race.split(/\s+/)[0] || "race";
   return (
-    <span className="text-sm text-black">
+    <span className="text-sm">
       Days until {name}: {n}
     </span>
   );

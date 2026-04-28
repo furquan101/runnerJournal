@@ -14,8 +14,6 @@ type SettingsState = {
   stravaExpiresAt: number | null;
   stravaAthleteId: number | null;
 
-  ouraConnected: boolean;
-
   setFontFamily: (f: FontFamily) => void;
   setFontSize: (s: 16 | 18 | 20 | 22) => void;
   setOpenRouterKey: (k: string | null) => void;
@@ -27,7 +25,6 @@ type SettingsState = {
     athleteId: number;
   }) => void;
   clearStrava: () => void;
-  setOuraConnected: (b: boolean) => void;
 };
 
 export const useSettings = create<SettingsState>()(
@@ -43,8 +40,6 @@ export const useSettings = create<SettingsState>()(
       stravaRefreshToken: null,
       stravaExpiresAt: null,
       stravaAthleteId: null,
-
-      ouraConnected: false,
 
       setFontFamily: (fontFamily) => set({ fontFamily }),
       setFontSize: (fontSize) => set({ fontSize }),
@@ -67,7 +62,6 @@ export const useSettings = create<SettingsState>()(
           stravaExpiresAt: null,
           stravaAthleteId: null,
         }),
-      setOuraConnected: (ouraConnected) => set({ ouraConnected }),
     }),
     { name: "rj.settings" },
   ),
