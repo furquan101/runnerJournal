@@ -5,6 +5,7 @@ import { usePlan } from "@/store/usePlan";
 import { useStrava } from "@/store/useStrava";
 import { handleStravaOAuthCallback } from "@/lib/stravaOAuth";
 import { PlanCreatorDialog } from "@/components/dialogs/PlanCreatorDialog";
+import { PlanOverviewDialog } from "@/components/dialogs/PlanOverviewDialog";
 import { ConnectionsDialog } from "@/components/dialogs/ConnectionsDialog";
 import { JournalEditor } from "@/components/journal/JournalEditor";
 import { SidebarShell } from "@/components/sidebar/SidebarShell";
@@ -56,6 +57,7 @@ export default function App() {
       )}
       {plan && <LeftStatusBar />}
       <PlanCreatorDialog />
+      <PlanOverviewDialog />
       <ConnectionsDialog />
     </div>
   );

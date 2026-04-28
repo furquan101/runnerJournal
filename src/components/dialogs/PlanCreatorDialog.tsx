@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { format, parseISO, startOfWeek } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { buildSchedule } from "@/lib/planGenerator";
 import { generateLLMPlan, LLMPlanError } from "@/lib/planLLM";
+import { groupByWeek, weekMiles } from "@/lib/planWeeks";
 import type { RaceTarget, Workout } from "@/types";
 import { searchRaces, type KnownRace } from "@/data/races";
 
@@ -408,26 +409,6 @@ function PlanPreview({
       </div>
     </div>
   );
-}
-
-function groupByWeek(schedule: Workout[]): { weekStartISO: string; workouts: Workout[] }[] {
-  const buckets = new Map<string, Workout[]>();
-  for (const w of schedule) {
-    const wkStart = format(startOfWeek(parseISO(w.dateISO), { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const list = buckets.get(wkStart);
-    if (list) list.push(w);
-    else buckets.set(wkStart, [w]);
-  }
-  return Array.from(buckets.entries())
-    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([weekStartISO, workouts]) => ({
-      weekStartISO,
-      workouts: workouts.sort((a, b) => (a.dateISO < b.dateISO ? -1 : 1)),
-    }));
-}
-
-function weekMiles(workouts: Workout[]): number {
-  return workouts.reduce((s, w) => s + (w.distanceMiles ?? 0), 0);
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
