@@ -1,17 +1,22 @@
 import { DotSeparator } from "@/components/DotSeparator";
-import type { Workout } from "@/types";
+import { activitiesOnDate, describeActivity, isWorkoutDone } from "@/lib/runStats";
+import type { StravaActivity, Workout } from "@/types";
 
 export function WorkoutRow({
   workout,
+  activities,
   selected = false,
   onSelect,
   onToggleComplete,
 }: {
   workout: Workout;
+  activities: StravaActivity[];
   selected?: boolean;
   onSelect?: () => void;
   onToggleComplete?: () => void;
 }) {
+  const ran = activitiesOnDate(activities, workout.dateISO)[0];
+  const done = isWorkoutDone(workout, activities);
   return (
     <button
       type="button"
@@ -30,8 +35,8 @@ export function WorkoutRow({
             <span>{workout.pace}</span>
           </>
         )}
-        <DotSeparator />
-        <span
+        {!ran && <DotSeparator />}
+        {!ran && <span
           role="button"
           tabIndex={0}
           onClick={(e) => {
@@ -47,12 +52,18 @@ export function WorkoutRow({
           }}
           className={
             "cursor-pointer text-sm transition " +
-            (workout.completed ? "text-emerald-700" : "text-black/60 hover:text-black")
+            (done ? "text-emerald-700" : "text-black/60 hover:text-black")
           }
         >
-          {workout.completed ? "Complete" : "Mark complete"}
-        </span>
+          {done ? "Complete" : "Mark complete"}
+        </span>}
       </div>
+      {ran && (
+        <p className="flex items-center gap-2 text-sm text-emerald-700">
+          <span className="inline-block size-1.5 rounded-full bg-[#FC4C02]" aria-hidden />
+          Ran {describeActivity(ran)}
+        </p>
+      )}
     </button>
   );
 }

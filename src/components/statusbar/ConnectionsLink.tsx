@@ -16,15 +16,13 @@ export function ConnectionsLink() {
 
 export function ConnectionsStatus() {
   const stravaConnected = useSettings((s) => !!s.stravaAccessToken);
-  const ouraConnected = useSettings((s) => s.ouraConnected);
   return (
-    <>
-      <span className="text-sm text-black">
-        Strava {stravaConnected ? "connected" : "not connected"}
-      </span>
-      <span className="text-sm text-black">
-        Oura {ouraConnected ? "connected" : "not connected"}
-      </span>
-    </>
+    <span className="flex items-center gap-2 text-sm text-black">
+      <span
+        className={"inline-block size-2 rounded-full " + (stravaConnected ? "bg-[#FC4C02]" : "bg-neutral-300")}
+        aria-hidden
+      />
+      Strava {stravaConnected ? "connected" : "not connected"}
+    </span>
   );
 }

@@ -39,10 +39,13 @@ export type StravaActivity = {
   totalElevationGainM?: number;
 };
 
+export type Feel = "good" | "okay" | "tough";
+
 export type JournalEntry = {
   dateISO: string;
   workoutId?: string;
   body: string;
+  feel?: Feel;
   updatedAt: string;
 };
 

@@ -3,26 +3,39 @@ import { ArrowUp } from "lucide-react";
 import { useEntries } from "@/store/useEntries";
 import { usePlan } from "@/store/usePlan";
 import { useSettings } from "@/store/useSettings";
+import { useStrava } from "@/store/useStrava";
 import { MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
 import { localInsight } from "@/lib/insights";
+
+const QUICK_QUESTIONS = [
+  "Is my goal time realistic?",
+  "What should my next run be?",
+  "Why do some runs feel so hard?",
+];
 
 export function CoachSidebar() {
   const entriesMap = useEntries((s) => s.entries);
   const plan = usePlan((s) => s.plan);
   const apiKey = useSettings((s) => s.openRouterKey);
+  const activities = useStrava((s) => s.activities);
 
   const recentEntries = useMemo(
     () => Object.values(entriesMap).sort((a, b) => (a.dateISO < b.dateISO ? -1 : 1)),
     [entriesMap],
   );
+  const journaled = recentEntries.filter((e) => e.body.trim() || e.feel).length;
 
   const [streamed, setStreamed] = useState("");
+  const [asked, setAsked] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [question, setQuestion] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
-  const fallback = useMemo(() => localInsight(recentEntries, plan), [recentEntries, plan]);
+  const fallback = useMemo(
+    () => localInsight(recentEntries, plan, activities),
+    [recentEntries, plan, activities],
+  );
 
   const ask = async (userMessage: string | null) => {
     abortRef.current?.abort();
@@ -36,11 +49,13 @@ export function CoachSidebar() {
     setPending(true);
     setError(null);
     setStreamed("");
+    setAsked(userMessage);
     try {
       await streamCoachInsights({
         apiKey,
         recentEntries,
         plan,
+        activities: useStrava.getState().activities,
         userMessage,
         signal: ctl.signal,
         onToken: (chunk) => setStreamed((s) => s + chunk),
@@ -61,17 +76,16 @@ export function CoachSidebar() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void ask(null);
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey]);
 
-  const onSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = question.trim();
-    if (!q) return;
+  const send = (q: string) => {
+    if (!q.trim() || pending) return;
     setQuestion("");
-    void ask(q);
+    void ask(q.trim());
   };
 
   const showFallback = !apiKey && !streamed;
@@ -79,16 +93,45 @@ export function CoachSidebar() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-1">
-        <h2 className="text-3xl font-normal text-black">Coach insights:</h2>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl font-normal text-black">Coach insights</h2>
+          <p className="text-xs opacity-60">
+            Reading {journaled} journal entr{journaled === 1 ? "y" : "ies"}
+            {activities.length > 0 ? ` and ${activities.length} Strava runs` : ""}
+          </p>
+        </div>
+        {asked && (
+          <p className="self-end rounded-2xl rounded-br-sm bg-black px-3 py-2 text-sm text-white">
+            {asked}
+          </p>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <p className="whitespace-pre-wrap text-sm leading-[1.6] text-black/80">
+        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-black/85">
           {showFallback ? fallback : streamed}
-          {pending && <span className="opacity-50">…</span>}
+          {pending && <span className="animate-pulse opacity-50"> ▍</span>}
         </p>
       </div>
+      {apiKey && (
+        <div className="flex flex-wrap gap-2">
+          {QUICK_QUESTIONS.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => send(q)}
+              disabled={pending}
+              className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-black/80 transition hover:border-black/40 disabled:opacity-40"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
       <form
-        onSubmit={onSend}
-        className="mt-2 flex h-[51px] shrink-0 items-center gap-2 rounded-[12px] border border-neutral-200 bg-white px-3 shadow-sm"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(question);
+        }}
+        className="flex h-[51px] shrink-0 items-center gap-2 rounded-[12px] border border-neutral-200 bg-white px-3 shadow-sm"
       >
         <input
           value={question}

@@ -10,7 +10,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useUiMode } from "@/store/useUiMode";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
@@ -21,11 +20,10 @@ export function ConnectionsDialog() {
   const close = useUiMode((s) => s.closeConnectionsDialog);
   const apiKey = useSettings((s) => s.openRouterKey);
   const setApiKey = useSettings((s) => s.setOpenRouterKey);
-  const ouraConnected = useSettings((s) => s.ouraConnected);
-  const setOuraConnected = useSettings((s) => s.setOuraConnected);
 
   const [draftKey, setDraftKey] = useState(apiKey ?? "");
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setDraftKey(apiKey ?? "");
   }, [open, apiKey]);
 
@@ -40,7 +38,7 @@ export function ConnectionsDialog() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-normal">Connections</DialogTitle>
           <DialogDescription className="opacity-70">
-            Hook your coach up to OpenRouter and Strava.
+            Connect Strava so your coach can see your real runs, and add an OpenRouter key so it can talk back.
           </DialogDescription>
         </DialogHeader>
 
@@ -64,9 +62,9 @@ export function ConnectionsDialog() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
               <Label className="text-sm">Oura</Label>
-              <p className="text-xs opacity-60">Bring sleep + HRV into your coach (coming soon)</p>
+              <p className="text-xs opacity-60">Bring sleep + HRV into your coach</p>
             </div>
-            <Switch checked={ouraConnected} onCheckedChange={setOuraConnected} />
+            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs opacity-70">Coming soon</span>
           </div>
 
           <div className="flex justify-end pt-2">
@@ -97,6 +95,7 @@ function StravaSection() {
   const [draftSecret, setDraftSecret] = useState(clientSecret ?? "");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftId(clientId ?? "");
     setDraftSecret(clientSecret ?? "");
   }, [clientId, clientSecret]);

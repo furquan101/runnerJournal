@@ -1,8 +1,7 @@
 import { addDays, format, parseISO, startOfWeek } from "date-fns";
 import type { RaceTarget, StravaActivity, Workout, WorkoutType } from "@/types";
-
-const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-sonnet-4-6";
+import { fmtPace, metersToMiles, paceMinPerMile } from "@/lib/runStats";
+import { COACH_MODEL as MODEL, OPENROUTER_ENDPOINT as ENDPOINT } from "@/lib/openrouter";
 
 export class LLMPlanError extends Error {
   constructor(message: string) {
@@ -12,22 +11,6 @@ export class LLMPlanError extends Error {
 }
 
 const VALID_TYPES: WorkoutType[] = ["easy", "long", "tempo", "intervals", "rest"];
-
-function metersToMiles(m: number): number {
-  return m / 1609.344;
-}
-
-function paceMinPerMile(distanceMeters: number, movingTimeSec: number): number | null {
-  const miles = metersToMiles(distanceMeters);
-  if (miles <= 0 || movingTimeSec <= 0) return null;
-  return movingTimeSec / 60 / miles;
-}
-
-function fmtPace(minPerMile: number): string {
-  const m = Math.floor(minPerMile);
-  const s = Math.round((minPerMile - m) * 60);
-  return `${m}:${s.toString().padStart(2, "0")}/mi`;
-}
 
 export function summarizeStravaForPrompt(activities: StravaActivity[]): string {
   if (activities.length === 0) return "No recent Strava activity available.";
@@ -151,11 +134,12 @@ function systemPrompt(): string {
     "Schedule workouts only on the runner's preferred days, honouring their target weekly frequency.",
     "Calibrate distance and pace to their current Strava history; do not increase weekly mileage by more than ~10% week over week.",
     "Include a taper in the final 2-3 weeks before the race.",
+    "Be honest about the goal time: if their Strava history suggests it is a stretch, say so in the notes and name a realistic target range, then build the plan around what they can safely achieve.",
     'Each workout type MUST be one of: "easy", "long", "tempo", "intervals", "rest".',
     "Pace should be in min/mile (e.g. \"9:30/mi\") when relevant; omit for rest.",
     "Return ONLY a JSON object matching this schema:",
     `{
-  "notes": "1-3 sentence rationale referencing the runner's current fitness",
+  "notes": "2-3 sentence rationale referencing the runner's current fitness and whether the goal time is realistic",
   "weeks": [
     {
       "weekStartISO": "YYYY-MM-DD (Monday)",

@@ -1,73 +1,39 @@
-# React + TypeScript + Vite
+# Runner Journal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A quiet place to write about your training, with an AI coach that reads your journal alongside your real Strava runs.
 
-Currently, two official plugins are available:
+Marathon and half marathon training has good weeks and bad ones. Runner Journal gives each day a blank page, shows you what was planned next to what you actually ran, and lets a coach reflect it back: what's working, what isn't, and whether your goal time is realistic right now.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- **Journal every day.** One page per day with a gentle prompt. Tag each run as *good*, *okay* or *tough*.
+- **Planned vs. actual.** Each entry shows the planned workout and the Strava run you logged that day. Workouts tick themselves off when a matching run appears.
+- **A plan built from your history.** Pick a race, goal time and training days. With Strava connected, the plan is calibrated to your recent mileage and paces, and the coach tells you honestly if the goal is a stretch.
+- **Coach insights.** The coach reads the last two weeks of journal entries, how runs felt and your Strava data, then answers questions like "Is my goal time realistic?" or "What should my next run be?"
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Everything is stored in your browser (IndexedDB + localStorage). Your API key and Strava tokens never leave your machine except to call OpenRouter and Strava directly.
 
-## Expanding the ESLint configuration
+## Run it locally
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then open the app and create a plan.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Connect Strava
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. Create an API app at [strava.com/settings/api](https://www.strava.com/settings/api).
+2. Set **Authorization Callback Domain** to `localhost` (or your deployed domain).
+3. In the app, open **Coach insights → Connections**, paste the Client ID and Client Secret, and press **Connect Strava**.
+
+### Turn on the AI coach
+
+Add an [OpenRouter](https://openrouter.ai/keys) API key in **Connections**. The coach and the plan generator use `anthropic/claude-sonnet-5.5` (see `COACH_MODEL` in `src/lib/openrouter.ts`).
+
+Without a key you still get a simple local summary of your streaks, how runs felt and your Strava mileage.
+
+## Stack
+
+React 19, Vite, TypeScript, Tailwind, Radix UI, Zustand, date-fns, idb-keyval.

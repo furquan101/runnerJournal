@@ -47,14 +47,16 @@ export default function App() {
   }, [fontFamily, fontSize]);
 
   return (
-    <div className="h-screen w-screen bg-white text-black overflow-hidden flex relative">
-      <div className="flex-1 min-w-0 relative">{plan && <JournalEditor />}</div>
+    <div className="min-h-screen md:h-screen w-full bg-white text-black md:overflow-hidden flex flex-col md:flex-row relative">
+      <div className="flex-1 min-w-0 min-h-[60vh] md:min-h-0 relative flex flex-col">
+        {plan && <JournalEditor />}
+        {plan && <LeftStatusBar />}
+      </div>
       {plan && (
         <SidebarShell>
           {sidebarMode === "workouts" ? <WorkoutSidebar /> : <CoachSidebar />}
         </SidebarShell>
       )}
-      {plan && <LeftStatusBar />}
       <PlanCreatorDialog />
       <ConnectionsDialog />
     </div>
