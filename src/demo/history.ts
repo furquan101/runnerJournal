@@ -237,7 +237,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     }
 
     // --- the journal entry
-    let body: string | null = null;
+    let body: string | null;
     if (inStory) {
       body = ({
         0: "Rest day. Foam rolled and planned the week.",
