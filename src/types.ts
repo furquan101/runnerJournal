@@ -37,6 +37,21 @@ export type StravaActivity = {
   averageHeartrate?: number;
   averageSpeed?: number;
   totalElevationGainM?: number;
+  summaryPolyline?: string;
+};
+
+export type RunSplit = {
+  mile: number;
+  distanceM: number;
+  movingSec: number;
+  averageHeartrate?: number;
+  elevationDiffM?: number;
+};
+
+export type RunDetail = {
+  id: number;
+  polyline: string;
+  splits: RunSplit[];
 };
 
 export type JournalEntry = {

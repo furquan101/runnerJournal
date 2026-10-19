@@ -46,6 +46,11 @@
   }
 }
 
+/* Soften OpenStreetMap tiles so the route stands out, Strava-style. */
+.rj-muted-tiles {
+  filter: grayscale(0.85) brightness(1.08) contrast(0.9);
+}
+
 @layer components {
   .chrome {
     opacity: var(--chrome-opacity);

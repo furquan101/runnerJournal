@@ -1,4 +1,4 @@
-import type { StravaActivity } from "@/types";
+import type { RunDetail, StravaActivity } from "@/types";
 
 export const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 export const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -97,6 +97,7 @@ type RawActivity = {
   average_heartrate?: number;
   average_speed?: number;
   total_elevation_gain?: number;
+  map?: { summary_polyline?: string | null; polyline?: string | null };
 };
 
 function isRun(a: RawActivity): boolean {
@@ -138,5 +139,39 @@ export async function fetchActivities(opts: {
     averageHeartrate: a.average_heartrate,
     averageSpeed: a.average_speed,
     totalElevationGainM: a.total_elevation_gain,
+    summaryPolyline: a.map?.summary_polyline ?? undefined,
   }));
+}
+
+type RawDetail = RawActivity & {
+  splits_standard?: {
+    split: number;
+    distance: number;
+    moving_time: number;
+    average_heartrate?: number;
+    elevation_difference?: number;
+  }[];
+};
+
+/** Full route and per-mile splits for one activity. */
+export async function fetchActivityDetail(accessToken: string, id: number): Promise<RunDetail> {
+  const res = await fetch(`${STRAVA_API_BASE}/activities/${id}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new StravaApiError(res.status, `Activity detail failed: ${text || res.statusText}`);
+  }
+  const a: RawDetail = await res.json();
+  return {
+    id: a.id,
+    polyline: a.map?.polyline || a.map?.summary_polyline || "",
+    splits: (a.splits_standard ?? []).map((s) => ({
+      mile: s.split,
+      distanceM: s.distance,
+      movingSec: s.moving_time,
+      averageHeartrate: s.average_heartrate,
+      elevationDiffM: s.elevation_difference,
+    })),
+  };
 }

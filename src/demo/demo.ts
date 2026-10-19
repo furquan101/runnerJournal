@@ -8,7 +8,7 @@ import { buildHistory, type History } from "@/demo/history";
 export const isDemo = import.meta.env.VITE_DEMO === "true";
 
 // Bump when the sample data changes so returning visitors are reseeded.
-const SEEDED_KEY = "rj.demo.seeded.v2";
+const SEEDED_KEY = "rj.demo.seeded.v3";
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
 function demoDates() {
@@ -165,6 +165,11 @@ function installFetchMock() {
       const perPage = Number(params.get("per_page") ?? 30);
       const page = Number(params.get("page") ?? 1);
       return json(history().runs.slice((page - 1) * perPage, page * perPage));
+    }
+    const detail = url.match(/strava\.com\/api\/v3\/activities\/(\d+)/);
+    if (detail) {
+      const run = history().runs.find((r) => r.id === Number(detail[1]));
+      return run ? json(run) : new Response("Not found", { status: 404 });
     }
     if (url.includes("api.ouraring.com/v2/usercollection/")) {
       const days = history().oura;
