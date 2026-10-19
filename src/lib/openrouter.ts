@@ -6,6 +6,7 @@ import { describeOuraDay } from "@/lib/oura";
 
 export const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 export const COACH_MODEL = "anthropic/claude-sonnet-5.5";
+export const COACH_NAME = "Coach Bennet";
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -19,12 +20,13 @@ function systemPrompt(plan: Plan | null): string {
     ? `The runner is training for ${plan.target.race} on ${plan.target.raceDate}, goal time ${plan.target.goalTime}, training ${plan.target.trainingFreqPerWeek} days a week (${plan.target.preferredDays.join(", ")}).`
     : "The runner has not set a race goal yet.";
   return [
-    "You are a marathon coach who has read every entry in a runner's training journal, alongside their real Strava runs and Oura sleep and recovery data.",
+    `You are ${COACH_NAME}, a marathon coach who has read every entry in a runner's training journal, alongside their real Strava runs and Oura sleep and recovery data.`,
     ctx,
     "Training has good weeks and bad weeks; treat both as useful information, never as failure.",
     "Ground everything in the data: compare what was planned with what they actually ran, and connect what they wrote to pace, distance, sleep, HRV and readiness. Look for patterns across the whole journal, not just this week.",
     "Be honest about whether the goal time looks realistic for their current fitness. If it doesn't, say so kindly and give a realistic range to aim for now.",
-    "Be warm, specific and short. Suggest one concrete thing for their next run. No bullet lists or headings; write 2–3 short paragraphs.",
+    "Your voice: warm, direct and motivating, like a club coach who believes in them. Short sentences. Celebrate the effort, reframe the bad days, and end with a line that makes them want to lace up.",
+    "Be specific and short. Suggest one concrete thing for their next run. No bullet lists or headings; write 2–3 short paragraphs.",
   ].join(" ");
 }
 
@@ -88,7 +90,7 @@ function userPrompt(
   sections.push(
     userMessage
       ? `The runner asks: ${userMessage}`
-      : "Reflect back the pattern you see in my training and journal, and tell me if I'm on track.",
+      : "Give me my weekly check-in: how this week is going (planned vs. run, what I wrote, how I slept), and get me fired up for the week ahead.",
   );
   return sections.join("\n\n");
 }

@@ -21,7 +21,7 @@ export type History = {
   runs: RawRun[];
   oura: OuraDay[];
   entries: JournalEntry[];
-  stats: { entries: number; goodSleepEasyPace: number; poorSleepEasyPace: number; kneeMentions: number; firstTempo: number; lastTempo: number; months: number };
+  stats: { storyMiles: number; storyRuns: number; entries: number; goodSleepEasyPace: number; poorSleepEasyPace: number; kneeMentions: number; firstTempo: number; lastTempo: number; months: number };
 };
 
 function rng(seed: number) {
@@ -147,6 +147,16 @@ export function buildHistory(today: Date, storyMonday: Date): History {
   const storyStart = iso(storyMonday);
   const storyEnd = iso(addDays(storyMonday, 6));
 
+  // Avoid the same line turning up in nearby entries.
+  const recentLines: string[] = [];
+  const fresh = (list: string[]) => {
+    let line = list[Math.floor(r() * list.length)];
+    for (let k = 0; k < 6 && line && recentLines.includes(line); k++) line = list[Math.floor(r() * list.length)];
+    if (line) recentLines.push(line);
+    if (recentLines.length > 12) recentLines.shift();
+    return line;
+  };
+
   const easySamples: { sleep: number; pace: number }[] = [];
   const tempoByMonth = new Map<string, number[]>();
 
@@ -236,14 +246,14 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     } else if (kind) {
       if (r() < 0.96) {
         const fmtP = `${Math.floor(pace)}:${String(Math.round((pace % 1) * 60)).padStart(2, "0")}`;
-        const opener = LINES[kind][Math.floor(r() * LINES[kind].length)].replace("{mi}", String(Math.round(miles))).replace("{pace}", `${fmtP}/mi`);
-        const feel = sleep >= 80 ? GOOD[Math.floor(r() * GOOD.length)] : sleep <= 68 ? HEAVY[Math.floor(r() * HEAVY.length)] : r() < 0.5 ? "" : (r() < 0.5 ? GOOD : HEAVY)[Math.floor(r() * 6)];
-        const season = r() < 0.45 ? SEASON[month][Math.floor(r() * SEASON[month].length)] : "";
+        const opener = fresh(LINES[kind]).replace("{mi}", String(Math.round(miles))).replace("{pace}", `${fmtP}/mi`);
+        const feel = sleep >= 80 ? fresh(GOOD) : sleep <= 68 ? fresh(HEAVY) : r() < 0.5 ? "" : fresh(r() < 0.5 ? GOOD : HEAVY);
+        const season = r() < 0.45 ? fresh(SEASON[month]) : "";
         const knee = month >= 5 && month <= 6 && r() < 0.12 ? "Knee quiet today." : "";
-        body = [opener, season, feel, knee, REFLECT[Math.floor(r() * REFLECT.length)]].filter(Boolean).join(" ");
+        body = [opener, season, feel, knee, fresh(REFLECT)].filter(Boolean).join(" ");
       }
     } else if (r() < 0.62) {
-      body = REST[Math.floor(r() * REST.length)];
+      body = fresh(REST);
     }
     if (d === iso(today)) body = null; // today's page is the visitor's to write
     if (body) entries.push({ dateISO: d, workoutId: d, body, updatedAt: now });
@@ -256,6 +266,8 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     oura,
     entries,
     stats: {
+      storyMiles: Math.round(runs.filter((r) => { const d = iso(new Date(r.start_date)); return d >= storyStart && d <= storyEnd; }).reduce((t, r) => t + r.distance / 1609.344, 0)),
+      storyRuns: runs.filter((r) => { const d = iso(new Date(r.start_date)); return d >= storyStart && d <= storyEnd; }).length,
       entries: entries.length,
       goodSleepEasyPace: avg(easySamples.filter((s) => s.sleep >= 80).map((s) => s.pace)),
       poorSleepEasyPace: avg(easySamples.filter((s) => s.sleep < 70).map((s) => s.pace)),

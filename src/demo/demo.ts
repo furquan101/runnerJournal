@@ -114,7 +114,9 @@ function coachReply(user: string, entryCount: number): string {
 
   const st = history().stats;
   if (!asked) {
-    return `I've read all ${entryCount} entries. The clearest pattern is that your runs follow your nights. After an Oura sleep score of 80 or more, your easy runs average ${fmtPace(st.goodSleepEasyPace)}. After nights under 70 it's ${fmtPace(st.poorSleepEasyPace)}, and that's when "heavy" and "tired" show up in what you write.\n\nThis week fits. Tuesday felt smooth after a good night, Thursday's tempo slipped after a short one, and resting the knee on Saturday was right. You've mentioned that knee ${st.kneeMentions} times since June, and it has always settled with rest.\n\nNext run: keep it truly easy, and protect the night before it.`;
+    const raceISO = pick(user, / on (\d{4}-\d{2}-\d{2})/, "");
+    const weeksOut = raceISO ? Math.round((parseISO(raceISO).getTime() - Date.now()) / (7 * 864e5)) : 7;
+    return `Big week, and an honest one. ${st.storyRuns} runs, ${st.storyMiles} miles, and you finished it with 12 on tired legs. That's what marathon training really looks like.\n\nThursday's tempo didn't slip because you're losing fitness. You slept 5 hours 40 and Oura had you at 61. Saturday you listened to the knee instead of your ego. That's not weakness, that's experience. Across all ${entryCount} entries, your good runs follow good nights, every time.\n\n${weeksOut} weeks to ${race.replace(/ \(.*\)$/, "") || "race day"}. Stack a few more weeks like this one and you'll stand on that start line ready. Early night Monday, easy Tuesday. Let's go.`;
   }
   if (asked.includes("realistic")) {
     const { lo, hi, goalPace, stretch } = goalCheck(race, goal);

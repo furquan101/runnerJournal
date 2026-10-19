@@ -6,7 +6,7 @@ import type { SidebarMode } from "@/types";
 const MODES: { mode: SidebarMode; label: string }[] = [
   { mode: "workouts", label: "Workouts" },
   { mode: "journal", label: "Journal" },
-  { mode: "coach", label: "Coach insights" },
+  { mode: "coach", label: "Coach" },
 ];
 
 export function SidebarModeLinks() {

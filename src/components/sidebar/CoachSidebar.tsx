@@ -5,7 +5,7 @@ import { usePlan } from "@/store/usePlan";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { useOura } from "@/store/useOura";
-import { MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
+import { COACH_NAME, MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
 import { localInsight } from "@/lib/insights";
 
 const QUICK_QUESTIONS = [
@@ -99,7 +99,7 @@ export function CoachSidebar() {
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-1">
         <div className="flex flex-col gap-1">
-          <h2 className="text-3xl font-normal text-black">Coach insights</h2>
+          <h2 className="text-3xl font-normal text-black">{COACH_NAME}</h2>
           <p className="text-xs opacity-60">
             Read {journaled.toLocaleString()} journal entr{journaled === 1 ? "y" : "ies"}
             {activities.length > 0 ? `, ${activities.length} Strava runs` : ""}
