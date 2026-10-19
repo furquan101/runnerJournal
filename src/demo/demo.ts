@@ -107,14 +107,14 @@ function demoPlanJson(user: string) {
 
 // ---------- coach replies
 
-function coachReply(user: string): string {
+function coachReply(user: string, entryCount: number): string {
   const asked = (user.split("The runner asks:")[1] || "").trim().toLowerCase();
   const race = pick(user, /training for (.+?) on \d/, "");
   const goal = pick(user, /goal time ([^,]+),/, "");
 
   const st = history().stats;
   if (!asked) {
-    return `I've read all ${st.entries} entries. The clearest pattern is that your runs follow your nights. After an Oura sleep score of 80 or more, your easy runs average ${fmtPace(st.goodSleepEasyPace)}. After nights under 70 it's ${fmtPace(st.poorSleepEasyPace)}, and that's when "heavy" and "tired" show up in what you write.\n\nThis week fits. Tuesday felt smooth after a good night, Thursday's tempo slipped after a short one, and resting the knee on Saturday was right. You've mentioned that knee ${st.kneeMentions} times since June, and it has always settled with rest.\n\nNext run: keep it truly easy, and protect the night before it.`;
+    return `I've read all ${entryCount} entries. The clearest pattern is that your runs follow your nights. After an Oura sleep score of 80 or more, your easy runs average ${fmtPace(st.goodSleepEasyPace)}. After nights under 70 it's ${fmtPace(st.poorSleepEasyPace)}, and that's when "heavy" and "tired" show up in what you write.\n\nThis week fits. Tuesday felt smooth after a good night, Thursday's tempo slipped after a short one, and resting the knee on Saturday was right. You've mentioned that knee ${st.kneeMentions} times since June, and it has always settled with rest.\n\nNext run: keep it truly easy, and protect the night before it.`;
   }
   if (asked.includes("realistic")) {
     const { lo, hi, goalPace, stretch } = goalCheck(race, goal);
@@ -192,7 +192,9 @@ function installFetchMock() {
         return json({ choices: [{ message: { content: JSON.stringify(demoPlanJson(user)) } }] });
       }
       const system: string = body.messages.find((m: { role: string }) => m.role === "system").content;
-      return new Response(sse(coachReply(`${system}\n${user}`), init.signal), {
+      const { useEntries } = await import("@/store/useEntries");
+      const count = Object.values(useEntries.getState().entries).filter((e) => e.body.trim()).length;
+      return new Response(sse(coachReply(`${system}\n${user}`, count), init.signal), {
         status: 200,
         headers: { "Content-Type": "text/event-stream" },
       });
