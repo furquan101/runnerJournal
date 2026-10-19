@@ -7,6 +7,7 @@ import { describeOuraDay } from "@/lib/oura";
 export const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 export const COACH_MODEL = "anthropic/claude-sonnet-5.5";
 export const COACH_NAME = "Coach Bennet";
+export const CHECKIN_LABELS = ["How it's going", "Doing well", "Next session"] as const;
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -25,8 +26,9 @@ function systemPrompt(plan: Plan | null): string {
     "Training has good weeks and bad weeks; treat both as useful information, never as failure.",
     "Ground everything in the data: compare what was planned with what they actually ran, and connect what they wrote to pace, distance, sleep, HRV and readiness. Look for patterns across the whole journal, not just this week.",
     "Be honest about whether the goal time looks realistic for their current fitness. If it doesn't, say so kindly and give a realistic range to aim for now.",
-    "Your voice: warm, direct and motivating, like a club coach who believes in them. Short sentences. Celebrate the effort, reframe the bad days, and end with a line that makes them want to lace up.",
-    "Be specific and short. Suggest one concrete thing for their next run. No bullet lists or headings; write 2–3 short paragraphs.",
+    "Your voice: warm, direct and motivating, like a club coach who believes in them. Short sentences. Celebrate the effort and reframe the bad days.",
+    `For the weekly check-in, write exactly three short paragraphs, each starting with its label: "${CHECKIN_LABELS[0]}:" (an honest read of how training is going), "${CHECKIN_LABELS[1]}:" (what they're doing well and should keep doing), "${CHECKIN_LABELS[2]}:" (the one thing to look out for in their next session, made concrete).`,
+    "When they ask a question, answer it directly in 2–3 short paragraphs with no labels, bullet lists or headings.",
   ].join(" ");
 }
 
@@ -90,7 +92,7 @@ function userPrompt(
   sections.push(
     userMessage
       ? `The runner asks: ${userMessage}`
-      : "Give me my weekly check-in: how this week is going (planned vs. run, what I wrote, how I slept), and get me fired up for the week ahead.",
+      : "Give me my weekly check-in: how my training is going, what I'm doing well, and what to look out for in my next session.",
   );
   return sections.join("\n\n");
 }

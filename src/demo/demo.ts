@@ -116,7 +116,7 @@ function coachReply(user: string, entryCount: number): string {
   if (!asked) {
     const raceISO = pick(user, / on (\d{4}-\d{2}-\d{2})/, "");
     const weeksOut = raceISO ? Math.round((parseISO(raceISO).getTime() - Date.now()) / (7 * 864e5)) : 7;
-    return `What a week. Tuesday you felt amazing. Thursday your legs felt like cement. And today you didn't want to go out, and you went anyway. That last one is the run that wins marathons.\n\nThursday wasn't your fitness going backwards. It was five hours of sleep and a long day at work. Across all ${entryCount} entries, your best runs follow your best nights. Look after your sleep and the cement days get rarer.\n\n${weeksOut} weeks to ${race.replace(/ \(.*\)$/, "") || "race day"}. Those mental barriers you wrote about? You're pushing straight through them. Early night Monday, easy Tuesday. Let's go.`;
+    return `How it's going: An honest week. Three of four runs done and a 12-miler to finish, ${weeksOut} weeks out from ${race.replace(/ \(.*\)$/, "") || "race day"}. You're on track.\n\nDoing well: Showing up. Today you didn't want to go out and went anyway, and on Tuesday's good day you still kept the easy run easy. Across all ${entryCount} entries, that consistency is what's moving your fitness.\n\nNext session: Thursday's cement legs came after five hours of sleep, not lost fitness. Get to bed early Monday, keep Tuesday's 5 miles slower than 9:45/mi, and stop at 3 if the legs still feel heavy.`;
   }
   if (asked.includes("realistic")) {
     const { lo, hi, goalPace, stretch } = goalCheck(race, goal);

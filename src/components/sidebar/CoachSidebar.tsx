@@ -6,7 +6,7 @@ import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { useOura } from "@/store/useOura";
 import { CoachAvatar } from "@/components/sidebar/CoachAvatar";
-import { COACH_NAME, MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
+import { CHECKIN_LABELS, COACH_NAME, MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
 import { localInsight } from "@/lib/insights";
 
 const QUICK_QUESTIONS = [
@@ -107,10 +107,7 @@ export function CoachSidebar() {
           </p>
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <p className="whitespace-pre-wrap text-[15px] leading-[1.65] text-black/85">
-          {showFallback ? fallback : streamed}
-          {pending && <span className="animate-pulse opacity-50"> ▍</span>}
-        </p>
+        <CoachReply text={showFallback ? fallback : streamed} pending={pending} />
       </div>
       {apiKey && (
         <div className="flex flex-wrap gap-2">
@@ -150,6 +147,30 @@ export function CoachSidebar() {
           <ArrowUp className="size-4" />
         </button>
       </form>
+    </div>
+  );
+}
+
+const LABEL_RX = new RegExp(`^(${CHECKIN_LABELS.join("|")}):\\s*`);
+
+/** Renders the coach's reply; check-in paragraphs get their label set above them. */
+function CoachReply({ text, pending }: { text: string; pending: boolean }) {
+  const paragraphs = text.split(/\n\s*\n/).filter((p, i, all) => p.trim() || i === all.length - 1);
+  return (
+    <div data-coach-reply className="flex flex-col gap-4 text-[15px] leading-[1.65] text-black/85">
+      {paragraphs.map((p, i) => {
+        const m = p.match(LABEL_RX);
+        const last = i === paragraphs.length - 1;
+        return (
+          <div key={i} className="flex flex-col gap-1">
+            {m && <span className="text-[11px] font-medium uppercase tracking-wider text-black/45">{m[1]}</span>}
+            <p className="whitespace-pre-wrap">
+              {m ? p.slice(m[0].length) : p}
+              {last && pending && <span className="animate-pulse opacity-50"> ▍</span>}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
