@@ -58,7 +58,9 @@ export function CoachSidebar() {
         activities: useStrava.getState().activities,
         userMessage,
         signal: ctl.signal,
-        onToken: (chunk) => setStreamed((s) => s + chunk),
+        onToken: (chunk) => {
+          if (!ctl.signal.aborted) setStreamed((s) => s + chunk);
+        },
       });
     } catch (e) {
       if (ctl.signal.aborted) return;
