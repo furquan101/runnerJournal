@@ -121,6 +121,14 @@ const REST = [
   "No run today. Walked to work instead.",
   "Rest day. Couldn't stop thinking about running.",
   "Rest. Stretched for 20 minutes, felt good.",
+  "Rest day. Ate well, slept well, legs thank me.",
+  "No run. Long day at work, yoga in the evening instead.",
+  "Day off. Read about marathon fuelling for an hour.",
+  "Rest day. Felt restless all day, which is probably a good sign.",
+  "Rest. Twenty minutes of core and an early night.",
+  "Day off. Watched race videos and got far too excited.",
+  "Rest day. Walked the dog the long way round.",
+  "No run today. Legs a bit stiff, so a long bath and stretching.",
 ];
 
 // ---------- phases (by month): long-run miles and specific stories
@@ -171,7 +179,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
 
     // --- Oura: the night before this day
     let sleep = Math.round(76 + (r() - 0.5) * 22 - (dow === 2 || dow === 3 ? 5 : 0));
-    if (inStory) sleep = [74, 84, 76, 61, 70, 68, 72][dow];
+    if (inStory) sleep = [74, 76, 78, 61, 70, 84, 72][dow];
     sleep = Math.max(52, Math.min(92, sleep));
     const sleepHours = Math.round((5.1 + ((sleep - 52) / 40) * 3.2 + (r() - 0.5) * 0.4) * 10) / 10;
     const hrv = Math.round(34 + (sleep - 60) * 0.55 + (r() - 0.5) * 8 + progress * 6);
@@ -192,7 +200,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     else if (dow === 4 && month >= 8 && r() < 0.35) kind = "shakeout";
     if (juneKnee || febFlu || (holiday && kind !== "long")) kind = null;
     if (!inStory && kind && kind !== "race" && r() < 0.05) kind = null;
-    if (inStory) kind = ([null, "easy", null, "tempo", null, null, "long"] as (Kind | null)[])[dow] ?? null;
+    if (inStory) kind = ([null, "easy", null, "tempo", null, "easy", "long"] as (Kind | null)[])[dow] ?? null;
 
     let miles = 0;
     let pace = 0;
@@ -232,21 +240,22 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     let body: string | null = null;
     if (inStory) {
       body = ({
-        1: "Felt amazing today. Easy 5 along the canal and I could have kept going forever. Slept 8 hours and it showed. Days like this are why I do it.",
+        0: "Rest day. Foam rolled and planned the week.",
+        1: "Easy 5 before work. Nothing special, which is sort of the point.",
+        2: "Rest day. Legs feel good. Early night.",
         3: "Felt like my legs were filled with cement. Tempo was meant to be 8:30s and I couldn't get under 8:45. Five hours of sleep and a long day at work. Just one of those days.",
-        5: "Rest day. Legs still heavy from Thursday. Trying not to read too much into one bad session.",
+        4: "Rest day. Still thinking about Thursday. One bad session doesn't undo months of work.",
+        5: "Felt amazing today. Easy 5 along the canal and I could have kept going forever. Slept 8 hours and it showed. Days like this are why I do it.",
         6: "Didn't want to go out today. Still went. 12 miles in the rain and every mile felt like a small win. Mental barriers are being pushed.",
       } as Record<number, string>)[dow] ?? null;
     } else if (kind === "race") {
       body = "Spring half done: 1:52:04. Went out too fast, paid for it from mile 9, but a PB is a PB. Learned more today than in any training run.";
     } else if (juneKnee) {
-      body = r() < 0.75
-        ? ["Outside of my knee is sore after Sunday. Not running today.", "Knee still grumbling. Rest, ice, physio exercises.", "Physio says IT band. Strengthening work, no running for a few days.", "Knee feels better. Tempted to run, not going to."][Math.floor(r() * 4)]
-        : null;
+      body = ["Outside of my knee is sore after Sunday. Not running today.", "Knee still grumbling. Rest, ice, physio exercises.", "Physio says IT band. Strengthening work, no running for a few days.", "Knee feels better. Tempted to run, not going to."][Math.floor(r() * 4)];
     } else if (febFlu) {
-      body = r() < 0.6 ? ["Full of cold. No running.", "Still ill. Frustrating watching the week disappear."][Math.floor(r() * 2)] : null;
+      body = ["Full of cold. No running.", "Still ill. Frustrating watching the week disappear.", "Feeling human again. Not running yet."][Math.floor(r() * 3)];
     } else if (kind) {
-      if (r() < 0.96) {
+      {
         const fmtP = `${Math.floor(pace)}:${String(Math.round((pace % 1) * 60)).padStart(2, "0")}`;
         const opener = fresh(LINES[kind]).replace("{mi}", String(Math.round(miles))).replace("{pace}", `${fmtP}/mi`);
         const feel = sleep >= 80 ? fresh(GOOD) : sleep <= 68 ? fresh(HEAVY) : r() < 0.5 ? "" : fresh(r() < 0.5 ? GOOD : HEAVY);
@@ -254,7 +263,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
         const knee = month >= 5 && month <= 6 && r() < 0.12 ? "Knee quiet today." : "";
         body = [opener, season, feel, knee, fresh(REFLECT)].filter(Boolean).join(" ");
       }
-    } else if (r() < 0.62) {
+    } else {
       body = fresh(REST);
     }
     if (d === iso(today)) body = null; // today's page is the visitor's to write
