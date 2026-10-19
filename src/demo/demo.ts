@@ -105,7 +105,11 @@ function parseGoalMinutes(goal: string): number | null {
   return null;
 }
 const fmtTime = (min: number) => (min >= 60 ? `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}` : `${Math.round(min)} min`);
-const fmtPace = (min: number) => `${Math.floor(min)}:${String(Math.floor((min % 1) * 60)).padStart(2, "0")}/mi`;
+// Rounded to the nearest 5 seconds, the way a coach would say it.
+const fmtPace = (min: number) => {
+  const sec = Math.round((min * 60) / 5) * 5;
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}/mi`;
+};
 
 function goalCheck(race: string, goal: string) {
   const miles = RACE_MILES(race);
