@@ -14,6 +14,7 @@ import { useUiMode } from "@/store/useUiMode";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { startStravaOAuth } from "@/lib/stravaOAuth";
+import { isDemo } from "@/demo/demo";
 
 export function ConnectionsDialog() {
   const open = useUiMode((s) => s.connectionsDialogOpen);
@@ -43,7 +44,13 @@ export function ConnectionsDialog() {
         </DialogHeader>
 
         <div className="flex flex-col gap-6 pt-2">
-          <div className="flex flex-col gap-2">
+          {isDemo && (
+            <p className="rounded-md bg-neutral-100 px-3 py-2 text-xs leading-relaxed text-black/70">
+              This is a demo with a sample runner's Strava history and pre-written coach replies.
+              Run it yourself with your own Strava and OpenRouter key to get real insights.
+            </p>
+          )}
+          {!isDemo && <div className="flex flex-col gap-2">
             <Label className="text-sm">OpenRouter API key</Label>
             <Input
               type="password"
@@ -55,7 +62,7 @@ export function ConnectionsDialog() {
             <p className="text-xs opacity-60">
               Stored in your browser only. Used to call Claude on your behalf.
             </p>
-          </div>
+          </div>}
 
           <StravaSection />
 

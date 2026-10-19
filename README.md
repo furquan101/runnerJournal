@@ -13,6 +13,8 @@ Marathon and half marathon training has good weeks and bad ones. Runner Journal 
 
 Everything is stored in your browser (IndexedDB + localStorage). Your API key and Strava tokens never leave your machine except to call OpenRouter and Strava directly.
 
+**Try the demo:** [runner-journal-demo.vercel.app](https://runner-journal-demo.vercel.app) uses a sample runner's Strava history and pre-written coach replies, so you can click around without any accounts.
+
 ## Run it locally
 
 ```bash
@@ -33,6 +35,10 @@ Then open the app and create a plan.
 Add an [OpenRouter](https://openrouter.ai/keys) API key in **Connections**. The coach and the plan generator use `anthropic/claude-sonnet-5.5` (see `COACH_MODEL` in `src/lib/openrouter.ts`).
 
 Without a key you still get a simple local summary of your streaks, how runs felt and your Strava mileage.
+
+### Demo mode
+
+`VITE_DEMO=true npm run build` builds the demo: sample Strava runs, journal entries and a plan are seeded into the browser, and Strava/OpenRouter requests are answered locally (see `src/demo/demo.ts`). Add `?onboarding` to the URL on first load to start from plan creation.
 
 ## Stack
 

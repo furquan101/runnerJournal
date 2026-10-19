@@ -12,6 +12,7 @@ import { WorkoutSidebar } from "@/components/sidebar/WorkoutSidebar";
 import { CoachSidebar } from "@/components/sidebar/CoachSidebar";
 import { LeftStatusBar } from "@/components/statusbar/StatusBar";
 import { useUiMode } from "@/store/useUiMode";
+import { DemoBadge } from "@/demo/DemoBadge";
 
 export default function App() {
   const hydrate = useEntries((s) => s.hydrate);
@@ -57,6 +58,7 @@ export default function App() {
           {sidebarMode === "workouts" ? <WorkoutSidebar /> : <CoachSidebar />}
         </SidebarShell>
       )}
+      <DemoBadge />
       <PlanCreatorDialog />
       <ConnectionsDialog />
     </div>
