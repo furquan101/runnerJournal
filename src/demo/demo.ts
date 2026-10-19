@@ -8,7 +8,7 @@ import { buildHistory, type History } from "@/demo/history";
 export const isDemo = import.meta.env.VITE_DEMO === "true";
 
 // Bump when the sample data changes so returning visitors are reseeded.
-const SEEDED_KEY = "rj.demo.seeded.v3";
+const SEEDED_KEY = "rj.demo.seeded.v4";
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
 function demoDates() {
@@ -116,7 +116,7 @@ function coachReply(user: string, entryCount: number): string {
   if (!asked) {
     const raceISO = pick(user, / on (\d{4}-\d{2}-\d{2})/, "");
     const weeksOut = raceISO ? Math.round((parseISO(raceISO).getTime() - Date.now()) / (7 * 864e5)) : 7;
-    return `Big week, and an honest one. ${st.storyRuns} runs, ${st.storyMiles} miles, and you finished it with 12 on tired legs. That's what marathon training really looks like.\n\nThursday's tempo didn't slip because you're losing fitness. You slept 5 hours 40 and Oura had you at 61. Saturday you listened to the knee instead of your ego. That's not weakness, that's experience. Across all ${entryCount} entries, your good runs follow good nights, every time.\n\n${weeksOut} weeks to ${race.replace(/ \(.*\)$/, "") || "race day"}. Stack a few more weeks like this one and you'll stand on that start line ready. Early night Monday, easy Tuesday. Let's go.`;
+    return `What a week. Tuesday you felt amazing. Thursday your legs felt like cement. And today you didn't want to go out, and you went anyway. That last one is the run that wins marathons.\n\nThursday wasn't your fitness going backwards. It was five hours of sleep and a long day at work. Across all ${entryCount} entries, your best runs follow your best nights. Look after your sleep and the cement days get rarer.\n\n${weeksOut} weeks to ${race.replace(/ \(.*\)$/, "") || "race day"}. Those mental barriers you wrote about? You're pushing straight through them. Early night Monday, easy Tuesday. Let's go.`;
   }
   if (asked.includes("realistic")) {
     const { lo, hi, goalPace, stretch } = goalCheck(race, goal);
@@ -165,11 +165,6 @@ function installFetchMock() {
       const perPage = Number(params.get("per_page") ?? 30);
       const page = Number(params.get("page") ?? 1);
       return json(history().runs.slice((page - 1) * perPage, page * perPage));
-    }
-    const detail = url.match(/strava\.com\/api\/v3\/activities\/(\d+)/);
-    if (detail) {
-      const run = history().runs.find((r) => r.id === Number(detail[1]));
-      return run ? json(run) : new Response("Not found", { status: 404 });
     }
     if (url.includes("api.ouraring.com/v2/usercollection/")) {
       const days = history().oura;

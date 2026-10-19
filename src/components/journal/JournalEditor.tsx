@@ -6,9 +6,8 @@ import { useStrava } from "@/store/useStrava";
 import { useUiMode } from "@/store/useUiMode";
 import { todayISO, workoutForDate } from "@/lib/date";
 import { promptForDate } from "@/lib/prompts";
-import { activitiesOnDate, metersToMiles } from "@/lib/runStats";
+import { activitiesOnDate } from "@/lib/runStats";
 import { EntryHeader } from "@/components/journal/EntryHeader";
-import { RunMapCard } from "@/components/journal/RunMapCard";
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -25,12 +24,6 @@ export function JournalEditor() {
   const workout = useMemo(() => workoutForDate(plan, dateISO), [plan, dateISO]);
   const allActivities = useStrava((s) => s.activities);
   const activities = useMemo(() => activitiesOnDate(allActivities, dateISO), [allActivities, dateISO]);
-  // Long runs get the route map; the longest run of the day if there were several.
-  const longRun = useMemo(() => {
-    const run = [...activities].sort((a, b) => b.distanceMeters - a.distanceMeters)[0];
-    if (!run) return undefined;
-    return workout?.type === "long" || metersToMiles(run.distanceMeters) >= 9.5 ? run : undefined;
-  }, [activities, workout?.type]);
 
   const [body, setBody] = useState("");
   const prevDateRef = useRef<string | null>(null);
@@ -80,7 +73,6 @@ export function JournalEditor() {
           onPrev={() => shiftDay(-1)}
           onNext={dateISO < today ? () => shiftDay(1) : undefined}
         />
-        {longRun && <RunMapCard key={longRun.id} activity={longRun} />}
       </div>
       <textarea
         key={dateISO}

@@ -2,16 +2,7 @@
 // Deterministic (seeded) so every visitor sees the same runner, generated relative to today.
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from "date-fns";
 import type { JournalEntry, OuraDay } from "@/types";
-import { decodePolyline, encodePolyline } from "@/lib/polyline";
-import { CANAL, LEA, THAMES } from "@/demo/routes";
 
-const outAndBack = (enc: string) => {
-  const pts = decodePolyline(enc);
-  return encodePolyline([...pts, ...pts.slice(0, -1).reverse()]);
-};
-const ROUTES = [outAndBack(CANAL), outAndBack(LEA), THAMES];
-
-type RawSplit = { split: number; distance: number; moving_time: number; average_heartrate: number; elevation_difference: number };
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
@@ -25,15 +16,13 @@ export type RawRun = {
   moving_time: number;
   elapsed_time: number;
   average_heartrate: number;
-  map?: { summary_polyline: string; polyline: string };
-  splits_standard?: RawSplit[];
 };
 
 export type History = {
   runs: RawRun[];
   oura: OuraDay[];
   entries: JournalEntry[];
-  stats: { storyMiles: number; storyRuns: number; entries: number; goodSleepEasyPace: number; poorSleepEasyPace: number; kneeMentions: number; firstTempo: number; lastTempo: number; months: number };
+  stats: { entries: number; goodSleepEasyPace: number; poorSleepEasyPace: number; kneeMentions: number; firstTempo: number; lastTempo: number; months: number };
 };
 
 function rng(seed: number) {
@@ -221,30 +210,6 @@ export function buildHistory(today: Date, storyMonday: Date): History {
       start.setHours(kind === "long" || kind === "race" ? 8 : 6, 40 + Math.floor(r() * 30), 0, 0);
       const names: Record<Kind, string> = { easy: "Morning Run", shakeout: "Morning Run", tempo: "Tempo Thursday", intervals: "Track session", long: "Sunday long run", race: "Spring Half Marathon" };
       const hr = Math.round((kind === "tempo" || kind === "intervals" || kind === "race" ? 163 : 142) + (75 - sleep) * 0.25);
-      let route: RawRun["map"];
-      let splits: RawSplit[] | undefined;
-      if (kind === "long" || kind === "race") {
-        // Most long runs go along the canal; some up the Lea or round the Thames.
-        const poly = inStory || kind === "race" ? ROUTES[0] : ROUTES[[0, 0, 1, 2][Math.floor(r() * 4)]];
-        route = { summary_polyline: poly, polyline: poly };
-        // Steady early miles, fading late on tired days (and on the story Sunday after mile 8).
-        const fadeFrom = inStory ? 8 : sleep < 70 ? Math.floor(miles * 0.65) : 99;
-        splits = [];
-        let left = miles;
-        for (let m = 1; left > 0.05; m++) {
-          const dist = Math.min(1, left);
-          const late = m > fadeFrom;
-          const p = pace + (late ? 0.55 : -0.12) + (r() - 0.5) * 0.12;
-          splits.push({
-            split: m,
-            distance: Math.round(dist * 1609.344),
-            moving_time: Math.round(dist * p * 60),
-            average_heartrate: Math.round(hr - 6 + m * 0.6 + (late ? 7 : 0) + (r() - 0.5) * 3),
-            elevation_difference: Math.round((r() - 0.5) * 8),
-          });
-          left -= dist;
-        }
-      }
       runs.push({
         id: id++,
         name: kind === "easy" && r() < 0.3 ? "Easy miles" : names[kind],
@@ -255,7 +220,6 @@ export function buildHistory(today: Date, storyMonday: Date): History {
         moving_time: Math.round(miles * pace * 60),
         elapsed_time: Math.round(miles * pace * 60) + 120,
         average_heartrate: hr,
-        ...(route ? { map: route, splits_standard: splits } : {}),
       });
       if (kind === "easy") easySamples.push({ sleep, pace });
       if (kind === "tempo") {
@@ -268,10 +232,10 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     let body: string | null = null;
     if (inStory) {
       body = ({
-        1: "Easy 5 felt smooth. Slept properly for once and it showed.",
-        3: "Tempo was meant to be 8:30s. Held 8:40s. Long day at work and my legs knew it.",
-        5: "Skipped today. Knee niggle again and zero motivation. Annoyed at myself, but resting felt right.",
-        6: "12 miles. Legs heavy from mile 8 and the pace drifted. Still finished, and the knee held up.",
+        1: "Felt amazing today. Easy 5 along the canal and I could have kept going forever. Slept 8 hours and it showed. Days like this are why I do it.",
+        3: "Felt like my legs were filled with cement. Tempo was meant to be 8:30s and I couldn't get under 8:45. Five hours of sleep and a long day at work. Just one of those days.",
+        5: "Rest day. Legs still heavy from Thursday. Trying not to read too much into one bad session.",
+        6: "Didn't want to go out today. Still went. 12 miles in the rain and every mile felt like a small win. Mental barriers are being pushed.",
       } as Record<number, string>)[dow] ?? null;
     } else if (kind === "race") {
       body = "Spring half done: 1:52:04. Went out too fast, paid for it from mile 9, but a PB is a PB. Learned more today than in any training run.";
@@ -304,8 +268,6 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     oura,
     entries,
     stats: {
-      storyMiles: Math.round(runs.filter((r) => { const d = iso(new Date(r.start_date)); return d >= storyStart && d <= storyEnd; }).reduce((t, r) => t + r.distance / 1609.344, 0)),
-      storyRuns: runs.filter((r) => { const d = iso(new Date(r.start_date)); return d >= storyStart && d <= storyEnd; }).length,
       entries: entries.length,
       goodSleepEasyPace: avg(easySamples.filter((s) => s.sleep >= 80).map((s) => s.pace)),
       poorSleepEasyPace: avg(easySamples.filter((s) => s.sleep < 70).map((s) => s.pace)),
