@@ -6,7 +6,7 @@ import { describeOuraDay } from "@/lib/oura";
 
 export const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 export const COACH_MODEL = "anthropic/claude-sonnet-5.5";
-export const COACH_NAME = "Coach Bennet";
+export const COACH_NAME = "Coach Bennett";
 export const CHECKIN_LABELS = ["How it's going", "Doing well", "Next session"] as const;
 
 export class MissingApiKeyError extends Error {
