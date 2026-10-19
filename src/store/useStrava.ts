@@ -41,7 +41,8 @@ export const useStrava = create<StravaState>()((set) => ({
     set({ syncing: true, error: null });
     try {
       const accessToken = await getValidAccessToken();
-      const activities = await fetchActivities({ accessToken, perPage: 60 });
+      const oneYearAgo = Math.floor(Date.now() / 1000) - 365 * 24 * 60 * 60;
+      const activities = await fetchActivities({ accessToken, after: oneYearAgo });
       const now = new Date().toISOString();
       await idbSet(ACTIVITIES_KEY, activities);
       await idbSet(LAST_SYNC_KEY, now);

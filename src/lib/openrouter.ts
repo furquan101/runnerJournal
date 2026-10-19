@@ -1,12 +1,11 @@
 import { addDays, format, parseISO } from "date-fns";
-import type { Feel, JournalEntry, Plan, StravaActivity } from "@/types";
+import type { JournalEntry, OuraDay, Plan, StravaActivity } from "@/types";
 import { summarizeStravaForPrompt } from "@/lib/planLLM";
 import { activitiesOnDate, describeActivity } from "@/lib/runStats";
+import { describeOuraDay } from "@/lib/oura";
 
 export const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 export const COACH_MODEL = "anthropic/claude-sonnet-5.5";
-
-const FEEL_LABEL: Record<Feel, string> = { good: "felt good", okay: "felt okay", tough: "felt tough" };
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -20,23 +19,29 @@ function systemPrompt(plan: Plan | null): string {
     ? `The runner is training for ${plan.target.race} on ${plan.target.raceDate}, goal time ${plan.target.goalTime}, training ${plan.target.trainingFreqPerWeek} days a week (${plan.target.preferredDays.join(", ")}).`
     : "The runner has not set a race goal yet.";
   return [
-    "You are a marathon coach reading a runner's journal alongside their real Strava data.",
+    "You are a marathon coach who has read every entry in a runner's training journal, alongside their real Strava runs and Oura sleep and recovery data.",
     ctx,
     "Training has good weeks and bad weeks; treat both as useful information, never as failure.",
-    "Ground everything in the data: compare what was planned with what they actually ran, and connect how runs felt to pace, distance and what they wrote.",
+    "Ground everything in the data: compare what was planned with what they actually ran, and connect what they wrote to pace, distance, sleep, HRV and readiness. Look for patterns across the whole journal, not just this week.",
     "Be honest about whether the goal time looks realistic for their current fitness. If it doesn't, say so kindly and give a realistic range to aim for now.",
     "Be warm, specific and short. Suggest one concrete thing for their next run. No bullet lists or headings; write 2–3 short paragraphs.",
   ].join(" ");
 }
 
-function dayLine(dateISO: string, plan: Plan | null, entry: JournalEntry | undefined, activities: StravaActivity[]): string {
+function dayLine(
+  dateISO: string,
+  plan: Plan | null,
+  entry: JournalEntry | undefined,
+  activities: StravaActivity[],
+  oura: OuraDay | undefined,
+): string {
   const planned = plan?.schedule.find((w) => w.dateISO === dateISO);
   const ran = activitiesOnDate(activities, dateISO);
   const lines = [`## ${format(parseISO(dateISO), "EEE d MMM")}`];
   if (planned) lines.push(`Planned: ${planned.description}${planned.pace ? ` at ${planned.pace}` : ""}`);
   if (ran.length > 0) lines.push(`Strava: ${ran.map(describeActivity).join("; ")}`);
   else if (planned && planned.type !== "rest") lines.push("Strava: no run recorded");
-  if (entry?.feel) lines.push(`How it felt: ${FEEL_LABEL[entry.feel]}`);
+  if (oura && describeOuraDay(oura)) lines.push(`Oura (night before): ${describeOuraDay(oura)}`);
   if (entry?.body.trim()) lines.push(`Journal: ${entry.body.trim()}`);
   return lines.join("\n");
 }
@@ -45,6 +50,7 @@ function userPrompt(
   entries: JournalEntry[],
   plan: Plan | null,
   activities: StravaActivity[],
+  ouraDays: Record<string, OuraDay>,
   userMessage: string | null,
 ): string {
   const byDate = new Map(entries.map((e) => [e.dateISO, e]));
@@ -54,16 +60,28 @@ function userPrompt(
     const dateISO = format(addDays(today, -i), "yyyy-MM-dd");
     const hasSomething =
       byDate.get(dateISO)?.body.trim() ||
-      byDate.get(dateISO)?.feel ||
       plan?.schedule.some((w) => w.dateISO === dateISO) ||
       activitiesOnDate(activities, dateISO).length > 0;
-    if (hasSomething) days.push(dayLine(dateISO, plan, byDate.get(dateISO), activities));
+    if (hasSomething) days.push(dayLine(dateISO, plan, byDate.get(dateISO), activities, ouraDays[dateISO]));
   }
+
+  // Everything older, condensed, so the coach can see patterns across the whole block.
+  const cutoff = format(addDays(today, -13), "yyyy-MM-dd");
+  const older = entries
+    .filter((e) => e.dateISO < cutoff && e.body.trim())
+    .slice(-400)
+    .map((e) => {
+      const run = activitiesOnDate(activities, e.dateISO)[0];
+      const sleep = ouraDays[e.dateISO]?.sleepScore;
+      const meta = [run ? describeActivity(run) : null, sleep ? `sleep ${sleep}` : null].filter(Boolean).join(", ");
+      return `- ${e.dateISO}${meta ? ` (${meta})` : ""}: ${e.body.trim().slice(0, 240)}`;
+    });
 
   const sections = [
     "My last two weeks, planned vs. actual:",
     days.length > 0 ? days.join("\n\n") : "(nothing logged yet)",
   ];
+  if (older.length > 0) sections.push(`The rest of my journal (${older.length} earlier entries):`, older.join("\n"));
   if (activities.length > 0) {
     sections.push("Longer-term Strava summary:", summarizeStravaForPrompt(activities));
   }
@@ -80,6 +98,7 @@ export async function streamCoachInsights(opts: {
   recentEntries: JournalEntry[];
   plan: Plan | null;
   activities: StravaActivity[];
+  ouraDays: Record<string, OuraDay>;
   userMessage?: string | null;
   signal?: AbortSignal;
   onToken: (chunk: string) => void;
@@ -101,7 +120,7 @@ export async function streamCoachInsights(opts: {
         { role: "system", content: systemPrompt(opts.plan) },
         {
           role: "user",
-          content: userPrompt(opts.recentEntries, opts.plan, opts.activities, opts.userMessage ?? null),
+          content: userPrompt(opts.recentEntries, opts.plan, opts.activities, opts.ouraDays, opts.userMessage ?? null),
         },
       ],
     }),

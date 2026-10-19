@@ -7,7 +7,7 @@ export function localInsight(
   activities: StravaActivity[] = [],
 ): string {
   const recent = entries
-    .filter((e) => e.body.trim().length > 0 || e.feel)
+    .filter((e) => e.body.trim().length > 0)
     .sort((a, b) => (a.dateISO < b.dateISO ? 1 : -1))
     .slice(0, 14);
 
@@ -18,8 +18,6 @@ export function localInsight(
   const streak = computeStreak(recent.map((e) => e.dateISO));
   const top = topWord(recent.map((e) => e.body).join(" "));
   const completed = plan ? plan.schedule.filter((w) => isWorkoutDone(w, activities)).length : 0;
-  const tough = recent.filter((e) => e.feel === "tough").length;
-  const good = recent.filter((e) => e.feel === "good").length;
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weekMiles = activities
     .filter((a) => new Date(a.startDateISO).getTime() >= weekAgo)
@@ -31,10 +29,6 @@ export function localInsight(
       streak > 1 ? `, with a ${streak}-day streak` : ""
     }.`,
   );
-  if (good > 0 && tough > 0)
-    lines.push(`${good} felt good and ${tough} felt tough. Both are part of it.`);
-  else if (tough > 0) lines.push(`${tough} felt tough. That's part of it, not a verdict.`);
-  else if (good > 0) lines.push(`${good} felt good. Notice what those days had in common.`);
   if (activities.length > 0) lines.push(`Strava has you at ${weekMiles.toFixed(1)} miles this week.`);
   if (top) lines.push(`The word that keeps showing up: "${top}".`);
   if (plan) lines.push(`You've ticked off ${completed} run${completed === 1 ? "" : "s"} so far.`);

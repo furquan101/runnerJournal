@@ -4,6 +4,7 @@ import { useEntries } from "@/store/useEntries";
 import { usePlan } from "@/store/usePlan";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
+import { useOura } from "@/store/useOura";
 import { MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
 import { localInsight } from "@/lib/insights";
 
@@ -18,12 +19,13 @@ export function CoachSidebar() {
   const plan = usePlan((s) => s.plan);
   const apiKey = useSettings((s) => s.openRouterKey);
   const activities = useStrava((s) => s.activities);
+  const nights = useOura((s) => Object.keys(s.days).length);
 
   const recentEntries = useMemo(
     () => Object.values(entriesMap).sort((a, b) => (a.dateISO < b.dateISO ? -1 : 1)),
     [entriesMap],
   );
-  const journaled = recentEntries.filter((e) => e.body.trim() || e.feel).length;
+  const journaled = recentEntries.filter((e) => e.body.trim()).length;
 
   const [streamed, setStreamed] = useState("");
   const [asked, setAsked] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export function CoachSidebar() {
         recentEntries,
         plan,
         activities: useStrava.getState().activities,
+        ouraDays: useOura.getState().days,
         userMessage,
         signal: ctl.signal,
         onToken: (chunk) => {
@@ -98,8 +101,9 @@ export function CoachSidebar() {
         <div className="flex flex-col gap-1">
           <h2 className="text-3xl font-normal text-black">Coach insights</h2>
           <p className="text-xs opacity-60">
-            Reading {journaled} journal entr{journaled === 1 ? "y" : "ies"}
-            {activities.length > 0 ? ` and ${activities.length} Strava runs` : ""}
+            Read {journaled.toLocaleString()} journal entr{journaled === 1 ? "y" : "ies"}
+            {activities.length > 0 ? `, ${activities.length} Strava runs` : ""}
+            {nights > 0 ? ` and ${nights} nights of Oura sleep` : ""}
           </p>
         </div>
         {asked && (

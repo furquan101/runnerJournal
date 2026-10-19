@@ -14,6 +14,8 @@ import { useUiMode } from "@/store/useUiMode";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { startStravaOAuth } from "@/lib/stravaOAuth";
+import { startOuraOAuth } from "@/lib/oura";
+import { useOura } from "@/store/useOura";
 import { isDemo } from "@/demo/demo";
 
 export function ConnectionsDialog() {
@@ -39,7 +41,7 @@ export function ConnectionsDialog() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-normal">Connections</DialogTitle>
           <DialogDescription className="opacity-70">
-            Connect Strava so your coach can see your real runs, and add an OpenRouter key so it can talk back.
+            Connect Strava and your Oura ring so your coach can see your real runs and sleep, and add an OpenRouter key so it can talk back.
           </DialogDescription>
         </DialogHeader>
 
@@ -66,13 +68,7 @@ export function ConnectionsDialog() {
 
           <StravaSection />
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <Label className="text-sm">Oura</Label>
-              <p className="text-xs opacity-60">Bring sleep + HRV into your coach</p>
-            </div>
-            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs opacity-70">Coming soon</span>
-          </div>
+          <OuraSection />
 
           <div className="flex justify-end pt-2">
             <Button onClick={onSave}>Save</Button>
@@ -190,6 +186,83 @@ function StravaSection() {
             <button
               type="button"
               onClick={() => void onDisconnect()}
+              className="text-xs underline opacity-60 hover:opacity-100"
+            >
+              Disconnect
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OuraSection() {
+  const clientId = useSettings((s) => s.ouraClientId);
+  const connected = useSettings((s) => !!s.ouraAccessToken);
+  const setClientId = useSettings((s) => s.setOuraClientId);
+  const clearOura = useSettings((s) => s.clearOura);
+  const days = useOura((s) => s.days);
+  const lastSyncedAt = useOura((s) => s.lastSyncedAt);
+  const syncing = useOura((s) => s.syncing);
+  const ouraError = useOura((s) => s.error);
+  const sync = useOura((s) => s.sync);
+  const clearDays = useOura((s) => s.clear);
+  const [draftId, setDraftId] = useState(clientId ?? "");
+  const nights = Object.keys(days).length;
+
+  const onConnect = () => {
+    const id = draftId.trim();
+    if (!id) return;
+    setClientId(id);
+    startOuraOAuth(id);
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">Oura</Label>
+        {connected && <span className="text-xs opacity-60">Connected</span>}
+      </div>
+      {!connected && (
+        <>
+          <p className="text-xs opacity-60">
+            Bring sleep, HRV and readiness into your coach. Create an app at{" "}
+            <a href="https://cloud.ouraring.com/oauth/applications" target="_blank" rel="noreferrer" className="underline">
+              cloud.ouraring.com/oauth/applications
+            </a>{" "}
+            with redirect URI <code>{window.location.origin + window.location.pathname}</code>.
+          </p>
+          <Input
+            value={draftId}
+            onChange={(e) => setDraftId(e.target.value)}
+            placeholder="Client ID"
+            autoComplete="off"
+          />
+          <div>
+            <Button onClick={onConnect} disabled={!draftId.trim()} className="bg-[#2f3a8f] text-white hover:bg-[#252e73]">
+              Connect Oura
+            </Button>
+          </div>
+        </>
+      )}
+      {connected && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs opacity-60">
+            {nights} night{nights === 1 ? "" : "s"} synced
+            {lastSyncedAt ? ` · ${formatDistanceToNow(parseISO(lastSyncedAt), { addSuffix: true })}` : ""}
+          </p>
+          {ouraError && <p className="text-xs text-red-600">{ouraError}</p>}
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => void sync()} disabled={syncing}>
+              {syncing ? "Syncing…" : "Sync now"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                clearOura();
+                void clearDays();
+              }}
               className="text-xs underline opacity-60 hover:opacity-100"
             >
               Disconnect

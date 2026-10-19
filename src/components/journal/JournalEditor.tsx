@@ -3,13 +3,12 @@ import { addDays, format, parseISO } from "date-fns";
 import { useEntries } from "@/store/useEntries";
 import { usePlan } from "@/store/usePlan";
 import { useStrava } from "@/store/useStrava";
+import { useOura } from "@/store/useOura";
 import { useUiMode } from "@/store/useUiMode";
 import { todayISO, workoutForDate } from "@/lib/date";
 import { promptForDate } from "@/lib/prompts";
 import { activitiesOnDate } from "@/lib/runStats";
 import { EntryHeader } from "@/components/journal/EntryHeader";
-import { FeelPicker } from "@/components/journal/FeelPicker";
-import type { Feel } from "@/types";
 
 const SAVE_DEBOUNCE_MS = 500;
 
@@ -22,11 +21,11 @@ export function JournalEditor() {
 
   const hydrated = useEntries((s) => s.hydrated);
   const upsert = useEntries((s) => s.upsert);
-  const feel = useEntries((s) => s.entries[dateISO]?.feel);
   const plan = usePlan((s) => s.plan);
   const workout = useMemo(() => workoutForDate(plan, dateISO), [plan, dateISO]);
   const allActivities = useStrava((s) => s.activities);
   const activities = useMemo(() => activitiesOnDate(allActivities, dateISO), [allActivities, dateISO]);
+  const oura = useOura((s) => s.days[dateISO]);
 
   const [body, setBody] = useState("");
   const prevDateRef = useRef<string | null>(null);
@@ -39,7 +38,6 @@ export function JournalEditor() {
         dateISO: prev,
         workoutId: workoutForDate(plan, prev)?.id,
         body,
-        feel: useEntries.getState().entries[prev]?.feel,
         updatedAt: new Date().toISOString(),
       });
     }
@@ -56,22 +54,11 @@ export function JournalEditor() {
         dateISO,
         workoutId: workout?.id,
         body,
-        feel: useEntries.getState().entries[dateISO]?.feel,
         updatedAt: new Date().toISOString(),
       });
     }, SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
   }, [body, hydrated, dateISO, workout?.id, upsert]);
-
-  const onFeel = (next: Feel | undefined) => {
-    void upsert({
-      dateISO,
-      workoutId: workout?.id,
-      body,
-      feel: next,
-      updatedAt: new Date().toISOString(),
-    });
-  };
 
   const shiftDay = (days: number) => {
     const next = format(addDays(date, days), "yyyy-MM-dd");
@@ -85,10 +72,10 @@ export function JournalEditor() {
           date={date}
           workout={workout}
           activities={activities}
+          oura={oura}
           onPrev={() => shiftDay(-1)}
           onNext={dateISO < today ? () => shiftDay(1) : undefined}
         />
-        <FeelPicker value={feel} onChange={onFeel} />
       </div>
       <textarea
         key={dateISO}

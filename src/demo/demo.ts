@@ -2,25 +2,14 @@
 // coach replies. Strava and OpenRouter requests are answered locally, so the app's real code
 // paths run without anyone's accounts or keys.
 import { addDays, format, parseISO, startOfWeek } from "date-fns";
-import { set as idbSet, get as idbGet } from "idb-keyval";
-import type { JournalEntry } from "@/types";
+import { set as idbSet, get as idbGet, clear as idbClear } from "idb-keyval";
+import { buildHistory, type History } from "@/demo/history";
 
 export const isDemo = import.meta.env.VITE_DEMO === "true";
 
-const SEEDED_KEY = "rj.demo.seeded";
+// Bump when the sample data changes so returning visitors are reseeded.
+const SEEDED_KEY = "rj.demo.seeded.v2";
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
-
-type RawRun = {
-  id: number;
-  name: string;
-  type: string;
-  sport_type: string;
-  start_date: string;
-  distance: number;
-  moving_time: number;
-  elapsed_time: number;
-  average_heartrate: number;
-};
 
 function demoDates() {
   const today = new Date();
@@ -28,65 +17,16 @@ function demoDates() {
   const thisMonday = startOfWeek(today, { weekStartsOn: 1 });
   // The "story week" is this week on a Sunday, otherwise last week, so it's always complete.
   const storyMonday = today.getDay() === 0 ? thisMonday : addDays(thisMonday, -7);
-  return { today, thisMonday, storyMonday };
+  return { today, storyMonday };
 }
 
-function demoRuns(): RawRun[] {
-  const { today, storyMonday } = demoDates();
-  const runs: RawRun[] = [];
-  let id = 1000;
-  const mk = (date: Date, miles: number, paceMin: number, hr: number, name: string) => {
-    if (date > today) return;
-    const d = new Date(date);
-    d.setHours(7, 5, 0, 0);
-    runs.push({
-      id: id++,
-      name,
-      type: "Run",
-      sport_type: "Run",
-      start_date: d.toISOString(),
-      distance: Math.round(miles * 1609.344),
-      moving_time: Math.round(miles * paceMin * 60),
-      elapsed_time: Math.round(miles * paceMin * 60) + 90,
-      average_heartrate: hr,
-    });
-  };
-  for (let w = 8; w >= 1; w--) {
-    const mon = addDays(storyMonday, -7 * w);
-    const prog = (8 - w) / 7;
-    mk(addDays(mon, 1), 4.5 + prog, 9.8 - prog * 0.1, 140, "Easy miles");
-    mk(addDays(mon, 3), 5 + prog, 8.8 - prog * 0.12, 162, "Tempo");
-    if (w % 3 !== 0) mk(addDays(mon, 5), 4 + prog, 9.9, 138, "Shakeout");
-    mk(addDays(mon, 6), 9 + prog * 3.5, 9.95 - prog * 0.1, 152, "Long run");
+let cached: History | null = null;
+function history(): History {
+  if (!cached) {
+    const { today, storyMonday } = demoDates();
+    cached = buildHistory(today, storyMonday);
   }
-  // Story week: good Tuesday, okay Thursday, skipped Saturday, heavy Sunday long run.
-  mk(addDays(storyMonday, 1), 5.1, 9.7, 139, "Easy 5");
-  mk(addDays(storyMonday, 3), 6.0, 8.68, 166, "Tempo Thursday");
-  mk(addDays(storyMonday, 6), 12.2, 9.97, 156, "Sunday long run");
-  // Days after the story week (when it was last week).
-  const after = addDays(storyMonday, 7);
-  mk(addDays(after, 1), 5.0, 9.75, 141, "Easy 5");
-  mk(addDays(after, 3), 6.2, 8.62, 164, "Tempo");
-  mk(addDays(after, 5), 4.2, 9.9, 137, "Shakeout");
-  return runs.sort((a, b) => (a.start_date < b.start_date ? 1 : -1));
-}
-
-function demoEntries(): JournalEntry[] {
-  const { today, storyMonday } = demoDates();
-  const now = new Date().toISOString();
-  const list: { d: number; feel: JournalEntry["feel"]; body: string }[] = [
-    { d: 1, feel: "good", body: "Easy 5 felt smooth. Slept properly for once and it showed." },
-    { d: 3, feel: "okay", body: "Tempo was meant to be 8:30s. Held 8:40s. Long day at work and my legs knew it." },
-    { d: 5, feel: "tough", body: "Skipped today. Knee niggle and zero motivation. Annoyed at myself, but resting felt right." },
-  ];
-  // Leave today's page blank for the visitor; otherwise include the Sunday long run.
-  if (iso(addDays(storyMonday, 6)) !== iso(today)) {
-    list.push({ d: 6, feel: "tough", body: "12 miles. Legs heavy from mile 8 and the pace drifted. Still finished, and the knee held up." });
-  }
-  return list.map((e) => {
-    const dateISO = iso(addDays(storyMonday, e.d));
-    return { dateISO, workoutId: dateISO, body: e.body, feel: e.feel, updatedAt: now };
-  });
+  return cached;
 }
 
 // ---------- plan generation (what the model returns)
@@ -155,9 +95,13 @@ function demoPlanJson(user: string) {
   }
 
   const range = `${fmtTime(lo)}–${fmtTime(hi)}`;
+  const recent = history().runs.filter((r) => Date.now() - new Date(r.start_date).getTime() < 56 * 864e5);
+  const weekly = Math.round(recent.reduce((t, r) => t + r.distance / 1609.344, 0) / 8);
+  const longest = Math.round(Math.max(...recent.map((r) => r.distance / 1609.344)));
+  const summary = `Your Strava shows about ${weekly} miles a week over the last two months, with long runs up to ${longest} miles.`;
   const notes = stretch
-    ? `Your Strava shows about 24 miles a week, with long runs up to 13 miles at 9:50/mi. ${goal} needs ${fmtPace(goalPace!)}, which is faster than your current tempo pace, so aim for ${range} this time and build to a ${peakLong}-mile long run before a two-week taper.`
-    : `Your Strava shows about 24 miles a week, with long runs up to 13 miles at 9:50/mi. ${goal || "Your goal"} fits your current fitness: build to a ${peakLong}-mile long run, keep easy days easy, and taper for the final two weeks.`;
+    ? `${summary} ${goal} needs ${fmtPace(goalPace!)}, which is faster than your current tempo pace, so aim for ${range} this time and build to a ${peakLong}-mile long run before a two-week taper.`
+    : `${summary} ${goal || "Your goal"} fits your current fitness: build to a ${peakLong}-mile long run, keep easy days easy, and taper for the final two weeks.`;
   return { notes, weeks };
 }
 
@@ -168,14 +112,15 @@ function coachReply(user: string): string {
   const race = pick(user, /training for (.+?) on \d/, "");
   const goal = pick(user, /goal time ([^,]+),/, "");
 
+  const st = history().stats;
   if (!asked) {
-    return "Honest week. Three of four runs done, and resting that knee on Saturday was the right call.\n\nYour best runs follow good sleep: Tuesday felt smooth, Thursday's tempo slipped after a long work day.\n\nNext run: keep it truly easy, slower than 10-minute miles.";
+    return `I've read all ${st.entries} entries. The clearest pattern is that your runs follow your nights. After an Oura sleep score of 80 or more, your easy runs average ${fmtPace(st.goodSleepEasyPace)}. After nights under 70 it's ${fmtPace(st.poorSleepEasyPace)}, and that's when "heavy" and "tired" show up in what you write.\n\nThis week fits. Tuesday felt smooth after a good night, Thursday's tempo slipped after a short one, and resting the knee on Saturday was right. You've mentioned that knee ${st.kneeMentions} times since June, and it has always settled with rest.\n\nNext run: keep it truly easy, and protect the night before it.`;
   }
   if (asked.includes("realistic")) {
     const { lo, hi, goalPace, stretch } = goalCheck(race, goal);
     const range = `${fmtTime(lo)}–${fmtTime(hi)}`;
     return stretch
-      ? `Not yet. ${goal} needs ${fmtPace(goalPace!)}, and your tempo runs sit around 8:40/mi.\n\nBased on your last eight weeks, ${range} is realistic for ${race.replace(/ \(.*\)$/, "")}. Go through halfway at ${fmtPace((lo + hi) / 2 / RACE_MILES(race))}.\n\n${goal} is very reachable next season if you keep building.`
+      ? `Not yet. ${goal} needs ${fmtPace(goalPace!)}, and your tempo runs sit around ${fmtPace(st.lastTempo)}. Over ${st.months} months they've come down from ${fmtPace(st.firstTempo)}, so you're getting there.\n\nBased on your recent training, ${range} is realistic for ${race.replace(/ \(.*\)$/, "")}. Go through halfway at ${fmtPace((lo + hi) / 2 / RACE_MILES(race))}.\n\n${goal} is very reachable next season if you keep building.`
       : `Yes. Your long runs and tempo pace put ${goal} within reach.\n\nThe risk isn't fitness, it's the knee. Protect it: easy days easy, and don't chase pace on tired legs.\n\nIf the next three weeks go well, ${fmtTime(lo - 5)} could be on the table.`;
   }
   if (asked.includes("next run")) {
@@ -214,7 +159,27 @@ function installFetchMock() {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("strava.com/api/v3/athlete/activities")) {
       await new Promise((r) => setTimeout(r, 300));
-      return json(demoRuns());
+      const params = new URL(url).searchParams;
+      const perPage = Number(params.get("per_page") ?? 30);
+      const page = Number(params.get("page") ?? 1);
+      return json(history().runs.slice((page - 1) * perPage, page * perPage));
+    }
+    if (url.includes("api.ouraring.com/v2/usercollection/")) {
+      const days = history().oura;
+      const kind = url.split("/usercollection/")[1].split("?")[0];
+      const data =
+        kind === "daily_sleep"
+          ? days.map((d) => ({ day: d.dateISO, score: d.sleepScore }))
+          : kind === "daily_readiness"
+            ? days.map((d) => ({ day: d.dateISO, score: d.readinessScore }))
+            : days.map((d) => ({
+                day: d.dateISO,
+                type: "long_sleep",
+                total_sleep_duration: Math.round((d.sleepHours ?? 0) * 3600),
+                average_hrv: d.hrvMs,
+                lowest_heart_rate: d.restingHr,
+              }));
+      return json({ data, next_token: null });
     }
     if (url.includes("strava.com/oauth/token")) {
       return json({ access_token: "demo", refresh_token: "demo", expires_at: 4102444800, athlete: { id: 1 } });
@@ -240,8 +205,8 @@ function installFetchMock() {
 
 async function seed() {
   if (await idbGet(SEEDED_KEY)) return;
-  const { generateLLMPlan } = await import("@/lib/planLLM");
-  const { fetchActivities } = await import("@/lib/strava");
+  await idbClear();
+  localStorage.clear();
 
   localStorage.setItem(
     "rj.settings",
@@ -256,15 +221,26 @@ async function seed() {
         stravaRefreshToken: "demo",
         stravaExpiresAt: 4102444800,
         stravaAthleteId: 1,
+        ouraClientId: "demo",
+        ouraAccessToken: "demo",
+        ouraExpiresAt: 4102444800,
       },
       version: 0,
     }),
   );
 
+  // Imported only now: these modules create the persisted stores, which must see the settings above.
+  const { generateLLMPlan } = await import("@/lib/planLLM");
+  const { fetchActivities } = await import("@/lib/strava");
+  const { fetchOuraDays } = await import("@/lib/oura");
+
+  const synced = new Date().toISOString();
   const activities = await fetchActivities({ accessToken: "demo" });
   await idbSet("rj.strava.activities", activities);
-  await idbSet("rj.strava.lastSyncedAt", new Date().toISOString());
-  for (const e of demoEntries()) await idbSet(`entry:${e.dateISO}`, e);
+  await idbSet("rj.strava.lastSyncedAt", synced);
+  await idbSet("rj.oura.days", await fetchOuraDays());
+  await idbSet("rj.oura.lastSyncedAt", synced);
+  for (const e of history().entries) await idbSet(`entry:${e.dateISO}`, e);
 
   if (!new URLSearchParams(location.search).has("onboarding")) {
     const raceDate = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 7 * 7 + 6);
