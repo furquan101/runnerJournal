@@ -5,6 +5,7 @@ import { usePlan } from "@/store/usePlan";
 import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { useOura } from "@/store/useOura";
+import { CoachAvatar } from "@/components/sidebar/CoachAvatar";
 import { COACH_NAME, MissingApiKeyError, streamCoachInsights } from "@/lib/openrouter";
 import { localInsight } from "@/lib/insights";
 
@@ -19,13 +20,11 @@ export function CoachSidebar() {
   const plan = usePlan((s) => s.plan);
   const apiKey = useSettings((s) => s.openRouterKey);
   const activities = useStrava((s) => s.activities);
-  const nights = useOura((s) => Object.keys(s.days).length);
 
   const recentEntries = useMemo(
     () => Object.values(entriesMap).sort((a, b) => (a.dateISO < b.dateISO ? -1 : 1)),
     [entriesMap],
   );
-  const journaled = recentEntries.filter((e) => e.body.trim()).length;
 
   const [streamed, setStreamed] = useState("");
   const [asked, setAsked] = useState<string | null>(null);
@@ -98,13 +97,9 @@ export function CoachSidebar() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex flex-col gap-4 overflow-y-auto flex-1 pr-1">
-        <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <CoachAvatar />
           <h2 className="text-3xl font-normal text-black">{COACH_NAME}</h2>
-          <p className="text-xs opacity-60">
-            Read {journaled.toLocaleString()} journal entr{journaled === 1 ? "y" : "ies"}
-            {activities.length > 0 ? `, ${activities.length} Strava runs` : ""}
-            {nights > 0 ? ` and ${nights} nights of Oura sleep` : ""}
-          </p>
         </div>
         {asked && (
           <p className="self-end rounded-2xl rounded-br-sm bg-black px-3 py-2 text-sm text-white">
