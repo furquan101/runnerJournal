@@ -200,7 +200,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
     else if (dow === 4 && month >= 8 && r() < 0.35) kind = "shakeout";
     if (juneKnee || febFlu || (holiday && kind !== "long")) kind = null;
     if (!inStory && kind && kind !== "race" && r() < 0.05) kind = null;
-    if (inStory) kind = ([null, "easy", null, "tempo", null, "easy", "long"] as (Kind | null)[])[dow] ?? null;
+    if (inStory) kind = ([null, "easy", null, "tempo", "shakeout", "easy", "long"] as (Kind | null)[])[dow] ?? null;
 
     let miles = 0;
     let pace = 0;
@@ -212,7 +212,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
       else if (kind === "tempo") { miles = Math.round((5 + r() * 1.5) * 10) / 10; pace = 8.95 - progress * 0.27 + sleepDrag * 0.8 + (r() - 0.5) * 0.1; }
       else if (kind === "intervals") { miles = Math.round((5 + r()) * 10) / 10; pace = 8.7 - progress * 0.25 + sleepDrag * 0.5; }
       else { miles = longMiles(month, r) + 0.1 * Math.round(r() * 4); pace = 10.25 - progress * 0.3 + sleepDrag * 0.8; }
-      if (inStory) [miles, pace] = ({ easy: [5.1, 9.7], tempo: [6.0, 8.68], long: [12.2, 9.97] } as Record<string, [number, number]>)[kind] ?? [miles, pace];
+      if (inStory) [miles, pace] = ({ easy: [5.1, 9.7], tempo: [6.0, 8.68], shakeout: [3.1, 10.6], long: [12.2, 9.97] } as Record<string, [number, number]>)[kind] ?? [miles, pace];
 
       const start = new Date(date);
       start.setHours(kind === "long" || kind === "race" ? 8 : 6, 40 + Math.floor(r() * 30), 0, 0);
@@ -244,7 +244,7 @@ export function buildHistory(today: Date, storyMonday: Date): History {
         1: "Easy 5 before work. Nothing special, which is sort of the point.",
         2: "Rest day. Legs feel good. Early night.",
         3: "Felt like my legs were filled with cement. Tempo was meant to be 8:30s and I couldn't get under 8:45. Five hours of sleep and a long day at work. Just one of those days.",
-        4: "Rest day. Still thinking about Thursday. One bad session doesn't undo months of work.",
+        4: "Ate a whole Tony's chocolate bar before my run and felt so sick. Eating the chocolate felt good in the moment, but running after, I felt like death. Lesson learned.",
         5: "Felt amazing today. Easy 5 along the canal and I could have kept going forever. Slept 8 hours and it showed. Days like this are why I do it.",
         6: "Didn't want to go out today. Still went. 12 miles in the rain and every mile felt like a small win. Mental barriers are being pushed.",
       } as Record<number, string>)[dow] ?? null;
