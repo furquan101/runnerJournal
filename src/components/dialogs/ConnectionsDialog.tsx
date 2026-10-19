@@ -16,7 +16,7 @@ import { useStrava } from "@/store/useStrava";
 import { startStravaOAuth } from "@/lib/stravaOAuth";
 import { startOuraOAuth } from "@/lib/oura";
 import { useOura } from "@/store/useOura";
-import { isDemo } from "@/demo/demo";
+import { isDemo, resetDemo } from "@/demo/demo";
 
 export function ConnectionsDialog() {
   const open = useUiMode((s) => s.connectionsDialogOpen);
@@ -49,7 +49,10 @@ export function ConnectionsDialog() {
           {isDemo && (
             <p className="rounded-md bg-neutral-100 px-3 py-2 text-xs leading-relaxed text-black/70">
               This is a demo with a sample runner's Strava history and pre-written coach replies.
-              Run it yourself with your own Strava and OpenRouter key to get real insights.
+              Run it yourself with your own Strava and OpenRouter key to get real insights.{" "}
+              <button type="button" onClick={() => void resetDemo()} className="underline">
+                Reset the demo
+              </button>
             </p>
           )}
           {!isDemo && <div className="flex flex-col gap-2">

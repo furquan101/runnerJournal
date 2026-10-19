@@ -15,7 +15,6 @@ import { CoachSidebar } from "@/components/sidebar/CoachSidebar";
 import { JournalSidebar } from "@/components/sidebar/JournalSidebar";
 import { LeftStatusBar } from "@/components/statusbar/StatusBar";
 import { useUiMode } from "@/store/useUiMode";
-import { DemoBadge } from "@/demo/DemoBadge";
 
 export default function App() {
   const hydrate = useEntries((s) => s.hydrate);
@@ -74,7 +73,6 @@ export default function App() {
           )}
         </SidebarShell>
       )}
-      <DemoBadge />
       <PlanCreatorDialog />
       <ConnectionsDialog />
     </div>

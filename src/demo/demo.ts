@@ -262,6 +262,13 @@ async function seed() {
   await idbSet(SEEDED_KEY, true);
 }
 
+/** Wipe the demo's browser storage and reseed from scratch. */
+export async function resetDemo() {
+  await idbClear();
+  localStorage.clear();
+  location.reload();
+}
+
 export async function installDemo() {
   installFetchMock();
   await seed();
