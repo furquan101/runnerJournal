@@ -3,10 +3,9 @@ import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from
 import { Search } from "lucide-react";
 import { useEntries } from "@/store/useEntries";
 import { useStrava } from "@/store/useStrava";
-import { useOura } from "@/store/useOura";
 import { useUiMode } from "@/store/useUiMode";
 import { todayISO } from "@/lib/date";
-import { activityDateISO, describeActivity, metersToMiles } from "@/lib/runStats";
+import { activityDateISO, metersToMiles } from "@/lib/runStats";
 import type { StravaActivity } from "@/types";
 
 const HEATMAP_WIDTH = 351;
@@ -14,7 +13,6 @@ const HEATMAP_WIDTH = 351;
 export function JournalSidebar() {
   const entriesMap = useEntries((s) => s.entries);
   const activities = useStrava((s) => s.activities);
-  const ouraDays = useOura((s) => s.days);
   const selectedDateISO = useUiMode((s) => s.selectedDateISO);
   const setSelectedDate = useUiMode((s) => s.setSelectedDate);
   const [query, setQuery] = useState("");
@@ -55,8 +53,7 @@ export function JournalSidebar() {
           {entries.length.toLocaleString()} journal entr{entries.length === 1 ? "y" : "ies"}
         </h2>
         <p className="text-xs opacity-60">
-          {trainingDays} days of training · {Math.round(totalMiles).toLocaleString()} miles on Strava
-          {Object.keys(ouraDays).length > 0 ? ` · ${Object.keys(ouraDays).length} nights on Oura` : ""}
+          {trainingDays} days of training · {Math.round(totalMiles).toLocaleString()} miles run
         </p>
       </div>
 
@@ -82,8 +79,6 @@ export function JournalSidebar() {
 
       <div className="flex flex-col">
         {shown.map((e) => {
-          const run = runsByDate.get(e.dateISO);
-          const sleep = ouraDays[e.dateISO]?.sleepScore;
           const selected = e.dateISO === activeDateISO;
           return (
             <button
@@ -96,13 +91,7 @@ export function JournalSidebar() {
                 (selected ? "bg-neutral-100" : "")
               }
             >
-              <span className="flex items-baseline justify-between gap-2">
-                <span className="text-sm text-black">{format(parseISO(e.dateISO), "EEE d MMM")}</span>
-                <span className="flex gap-2 text-[11px] opacity-60">
-                  {run && <span className="text-[#FC4C02]">{describeActivity(run).split(" · ").slice(0, 2).join(" · ")}</span>}
-                  {sleep && <span className="text-[#2f3a8f]">Sleep {sleep}</span>}
-                </span>
-              </span>
+              <span className="text-sm text-black">{format(parseISO(e.dateISO), "EEE d MMM")}</span>
               <span className="line-clamp-2 text-[13px] leading-snug text-black/70">
                 <Highlight text={e.body} query={q} />
               </span>
