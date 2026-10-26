@@ -1,0 +1,1 @@
+export{t as useEntries}from"./useEntries-cAcrCEBs.js";
