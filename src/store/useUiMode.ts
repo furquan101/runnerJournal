@@ -7,7 +7,6 @@ type UiModeState = {
   connectionsDialogOpen: boolean;
   selectedDateISO: string | null;
   setSidebarMode: (mode: SidebarMode) => void;
-  toggleSidebar: () => void;
   openPlanDialog: () => void;
   closePlanDialog: () => void;
   openConnectionsDialog: () => void;
@@ -21,8 +20,6 @@ export const useUiMode = create<UiModeState>()((set) => ({
   connectionsDialogOpen: false,
   selectedDateISO: null,
   setSidebarMode: (sidebarMode) => set({ sidebarMode }),
-  toggleSidebar: () =>
-    set((s) => ({ sidebarMode: s.sidebarMode === "workouts" ? "coach" : "workouts" })),
   openPlanDialog: () => set({ planDialogOpen: true }),
   closePlanDialog: () => set({ planDialogOpen: false }),
   openConnectionsDialog: () => set({ connectionsDialogOpen: true }),

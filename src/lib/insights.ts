@@ -1,6 +1,11 @@
-import type { JournalEntry, Plan } from "@/types";
+import type { JournalEntry, Plan, StravaActivity } from "@/types";
+import { isWorkoutDone, metersToMiles } from "@/lib/runStats";
 
-export function localInsight(entries: JournalEntry[], plan: Plan | null): string {
+export function localInsight(
+  entries: JournalEntry[],
+  plan: Plan | null,
+  activities: StravaActivity[] = [],
+): string {
   const recent = entries
     .filter((e) => e.body.trim().length > 0)
     .sort((a, b) => (a.dateISO < b.dateISO ? 1 : -1))
@@ -12,7 +17,11 @@ export function localInsight(entries: JournalEntry[], plan: Plan | null): string
 
   const streak = computeStreak(recent.map((e) => e.dateISO));
   const top = topWord(recent.map((e) => e.body).join(" "));
-  const completed = plan ? plan.schedule.filter((w) => w.completed).length : 0;
+  const completed = plan ? plan.schedule.filter((w) => isWorkoutDone(w, activities)).length : 0;
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weekMiles = activities
+    .filter((a) => new Date(a.startDateISO).getTime() >= weekAgo)
+    .reduce((sum, a) => sum + metersToMiles(a.distanceMeters), 0);
 
   const lines: string[] = [];
   lines.push(
@@ -20,6 +29,7 @@ export function localInsight(entries: JournalEntry[], plan: Plan | null): string
       streak > 1 ? `, with a ${streak}-day streak` : ""
     }.`,
   );
+  if (activities.length > 0) lines.push(`Strava has you at ${weekMiles.toFixed(1)} miles this week.`);
   if (top) lines.push(`The word that keeps showing up: "${top}".`);
   if (plan) lines.push(`You've ticked off ${completed} run${completed === 1 ? "" : "s"} so far.`);
   lines.push("Add an OpenRouter API key in Connections to hear from your coach.");

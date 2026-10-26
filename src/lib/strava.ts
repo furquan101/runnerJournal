@@ -104,24 +104,29 @@ function isRun(a: RawActivity): boolean {
   return t === "run" || t === "trailrun" || t === "virtualrun";
 }
 
+/** Pages through the athlete's activities (newest first) back to `after`, up to `maxPages`. */
 export async function fetchActivities(opts: {
   accessToken: string;
   perPage?: number;
   after?: number;
+  maxPages?: number;
 }): Promise<StravaActivity[]> {
-  const params = new URLSearchParams({
-    per_page: String(opts.perPage ?? 60),
-  });
-  if (opts.after) params.set("after", String(opts.after));
-
-  const res = await fetch(`${STRAVA_API_BASE}/athlete/activities?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${opts.accessToken}` },
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new StravaApiError(res.status, `Activity fetch failed: ${text || res.statusText}`);
+  const perPage = opts.perPage ?? 100;
+  const raw: RawActivity[] = [];
+  for (let page = 1; page <= (opts.maxPages ?? 8); page++) {
+    const params = new URLSearchParams({ per_page: String(perPage), page: String(page) });
+    if (opts.after) params.set("after", String(opts.after));
+    const res = await fetch(`${STRAVA_API_BASE}/athlete/activities?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${opts.accessToken}` },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new StravaApiError(res.status, `Activity fetch failed: ${text || res.statusText}`);
+    }
+    const batch: RawActivity[] = await res.json();
+    raw.push(...batch);
+    if (batch.length < perPage) break;
   }
-  const raw: RawActivity[] = await res.json();
   return raw.filter(isRun).map((a) => ({
     id: a.id,
     startDateISO: a.start_date,
@@ -135,3 +140,4 @@ export async function fetchActivities(opts: {
     totalElevationGainM: a.total_elevation_gain,
   }));
 }
+

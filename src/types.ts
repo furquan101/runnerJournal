@@ -39,6 +39,7 @@ export type StravaActivity = {
   totalElevationGainM?: number;
 };
 
+
 export type JournalEntry = {
   dateISO: string;
   workoutId?: string;
@@ -46,6 +47,15 @@ export type JournalEntry = {
   updatedAt: string;
 };
 
-export type SidebarMode = "workouts" | "coach";
+export type OuraDay = {
+  dateISO: string;
+  sleepScore?: number;
+  readinessScore?: number;
+  sleepHours?: number;
+  hrvMs?: number;
+  restingHr?: number;
+};
+
+export type SidebarMode = "workouts" | "journal" | "coach";
 
 export type FontFamily = "Rubik" | "Lato" | "Times New Roman" | "System Sans";

@@ -10,6 +10,7 @@ import { useSettings } from "@/store/useSettings";
 import { useStrava } from "@/store/useStrava";
 import { buildSchedule } from "@/lib/planGenerator";
 import { generateLLMPlan, LLMPlanError } from "@/lib/planLLM";
+import { keepCompleted } from "@/lib/runStats";
 import type { RaceTarget, Workout } from "@/types";
 import { searchRaces, type KnownRace } from "@/data/races";
 
@@ -50,6 +51,7 @@ export function PlanCreatorDialog() {
 
   useEffect(() => {
     if (open && plan) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRace(plan.target.race);
       setRaceDate(plan.target.raceDate);
       setGoalTime(plan.target.goalTime);
@@ -60,6 +62,7 @@ export function PlanCreatorDialog() {
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreview(null);
       setError(null);
       setPendingTarget(null);
@@ -67,6 +70,7 @@ export function PlanCreatorDialog() {
   }, [open]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveSuggestion(0);
   }, [race]);
 
@@ -149,7 +153,8 @@ export function PlanCreatorDialog() {
 
   const savePreview = () => {
     if (!preview) return;
-    setPlan(preview.target, preview.schedule, preview.notes);
+    const schedule = plan ? keepCompleted(plan.schedule, preview.schedule) : preview.schedule;
+    setPlan(preview.target, schedule, preview.notes);
     setPreview(null);
     setError(null);
     if (!onboarding) closePlanDialog();
@@ -181,7 +186,10 @@ export function PlanCreatorDialog() {
       }}
     >
       <DialogContent
-        className={preview ? "max-w-[720px]" : "max-w-[640px]"}
+        className={
+          "max-h-[92vh] overflow-y-auto " + (preview ? "max-w-[720px]" : "max-w-[640px]")
+        }
+        hideClose={onboarding}
         onInteractOutside={(e) => onboarding && e.preventDefault()}
         onEscapeKeyDown={(e) => onboarding && e.preventDefault()}
       >
@@ -271,7 +279,7 @@ export function PlanCreatorDialog() {
               />
             </Field>
             <Field label="Preferred days to train?">
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {WEEKDAYS.map((d) => {
                   const active = preferredDays.includes(d);
                   return (

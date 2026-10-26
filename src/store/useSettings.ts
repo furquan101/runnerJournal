@@ -14,7 +14,9 @@ type SettingsState = {
   stravaExpiresAt: number | null;
   stravaAthleteId: number | null;
 
-  ouraConnected: boolean;
+  ouraClientId: string | null;
+  ouraAccessToken: string | null;
+  ouraExpiresAt: number | null;
 
   setFontFamily: (f: FontFamily) => void;
   setFontSize: (s: 16 | 18 | 20 | 22) => void;
@@ -27,7 +29,9 @@ type SettingsState = {
     athleteId: number;
   }) => void;
   clearStrava: () => void;
-  setOuraConnected: (b: boolean) => void;
+  setOuraClientId: (id: string | null) => void;
+  setOuraToken: (token: { accessToken: string; expiresAt: number }) => void;
+  clearOura: () => void;
 };
 
 export const useSettings = create<SettingsState>()(
@@ -44,7 +48,9 @@ export const useSettings = create<SettingsState>()(
       stravaExpiresAt: null,
       stravaAthleteId: null,
 
-      ouraConnected: false,
+      ouraClientId: null,
+      ouraAccessToken: null,
+      ouraExpiresAt: null,
 
       setFontFamily: (fontFamily) => set({ fontFamily }),
       setFontSize: (fontSize) => set({ fontSize }),
@@ -67,7 +73,10 @@ export const useSettings = create<SettingsState>()(
           stravaExpiresAt: null,
           stravaAthleteId: null,
         }),
-      setOuraConnected: (ouraConnected) => set({ ouraConnected }),
+      setOuraClientId: (ouraClientId) => set({ ouraClientId }),
+      setOuraToken: ({ accessToken, expiresAt }) =>
+        set({ ouraAccessToken: accessToken, ouraExpiresAt: expiresAt }),
+      clearOura: () => set({ ouraClientId: null, ouraAccessToken: null, ouraExpiresAt: null }),
     }),
     { name: "rj.settings" },
   ),
