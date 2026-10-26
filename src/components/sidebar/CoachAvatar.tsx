@@ -2,7 +2,7 @@ import { useState } from "react";
 import { COACH_NAME } from "@/lib/openrouter";
 
 // Drop the coach's photo at public/coach-bennet.jpg; until then this shows initials.
-const PHOTO = "/coach-bennet.jpg";
+const PHOTO = `${import.meta.env.BASE_URL}coach-bennet.jpg`;
 
 export function CoachAvatar({ size = 44 }: { size?: number }) {
   const [failed, setFailed] = useState(false);
